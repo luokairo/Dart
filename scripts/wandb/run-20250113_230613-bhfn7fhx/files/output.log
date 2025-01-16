@@ -1,0 +1,85 @@
+  0%|                                                                                                                                                               | 0/100 [00:00<?, ?it/s][[34m2025-01-13 23:06:14[0m] Begin epoch 0...
+                                                                                                                                                                                            /fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/quantize/dart_quantize.py:47: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):                                                                                                                    | 0/18156 [00:00<?, ?it/s]
+  0%|                                                                                                                                                             | 0/18156 [00:16<?, ?it/s]
+  0%|                                                                                                                                                               | 0/100 [00:16<?, ?it/s]
+Traceback (most recent call last):
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 438, in <module>
+    main(args)
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 277, in main
+    out = vae_model(imgs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/parallel/distributed.py", line 1643, in forward
+    else self._run_ddp_forward(*inputs, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/parallel/distributed.py", line 1459, in _run_ddp_forward
+    return self.module(*inputs, **kwargs)  # type: ignore[index]
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/dart_autoencoder.py", line 153, in forward
+    out = self.decoder(self.post_quant_conv(h_BChw))
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/fs/scratch/PAS2473/ICML2025/dart/models/networks/basic_vae.py", line 296, in forward
+    h = self.up[i_level].upsample(h)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/fs/scratch/PAS2473/ICML2025/dart/models/networks/basic_vae.py", line 41, in forward
+    return self.conv(F.interpolate(x, scale_factor=2, mode="nearest"))
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/conv.py", line 554, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/conv.py", line 549, in _conv_forward
+    return F.conv2d(
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 3.75 GiB. GPU 0 has a total capacity of 79.14 GiB of which 1.30 GiB is free. Including non-PyTorch memory, this process has 77.81 GiB memory in use. Of the allocated memory 69.68 GiB is allocated by PyTorch, and 6.52 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 438, in <module>
+[rank0]:     main(args)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 277, in main
+[rank0]:     out = vae_model(imgs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/parallel/distributed.py", line 1643, in forward
+[rank0]:     else self._run_ddp_forward(*inputs, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/parallel/distributed.py", line 1459, in _run_ddp_forward
+[rank0]:     return self.module(*inputs, **kwargs)  # type: ignore[index]
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/dart_autoencoder.py", line 153, in forward
+[rank0]:     out = self.decoder(self.post_quant_conv(h_BChw))
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/models/networks/basic_vae.py", line 296, in forward
+[rank0]:     h = self.up[i_level].upsample(h)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/models/networks/basic_vae.py", line 41, in forward
+[rank0]:     return self.conv(F.interpolate(x, scale_factor=2, mode="nearest"))
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/conv.py", line 554, in forward
+[rank0]:     return self._conv_forward(input, self.weight, self.bias)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/conv.py", line 549, in _conv_forward
+[rank0]:     return F.conv2d(
+[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 3.75 GiB. GPU 0 has a total capacity of 79.14 GiB of which 1.30 GiB is free. Including non-PyTorch memory, this process has 77.81 GiB memory in use. Of the allocated memory 69.68 GiB is allocated by PyTorch, and 6.52 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

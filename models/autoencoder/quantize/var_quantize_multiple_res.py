@@ -362,6 +362,12 @@ class VectorQuantizer2(nn.Module):
             torch.cat(next_scales, dim=1) if len(next_scales) else None
         )  # cat BlCs to BLC, this should be float32
 
+    # def f_to_x_BLCv(
+    #     self, 
+    #     f_BChw: torch.Tensor,
+    #     v_patch_nums: Optional[Sequence[Union[int, Tuple[int, int]]]] = None,
+    # )
+
     # ===================== get_next_autoregressive_input: only used in VAR inference, for getting next step's input =====================
     def get_next_autoregressive_input(
         self,

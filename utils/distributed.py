@@ -18,6 +18,7 @@ def setup_for_distributed(is_master):
     __builtin__.print = print
 
 def init_distributed_mode(args):
+    print("Environment variables: ", os.environ.get('LOCAL_RANK'), os.environ.get('RANK'), os.environ.get('WORLD_SIZE'))
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
         args.rank = int(os.environ["RANK"])
         args.world_size = int(os.environ['WORLD_SIZE'])
@@ -45,6 +46,10 @@ def init_distributed_mode(args):
         print('Not using distributed mode')
         args.distributed = False
         return
+    print("RANK: ", os.environ.get('RANK'))
+    print("WORLD_SIZE: ", os.environ.get('WORLD_SIZE'))
+    print("MASTER_ADDR: ", os.environ.get('MASTER_ADDR'))
+    print("MASTER_PORT: ", os.environ.get('MASTER_PORT'))
 
     args.distributed = True
 
@@ -54,5 +59,6 @@ def init_distributed_mode(args):
         args.rank, args.dist_url), flush=True)
     torch.distributed.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
                                          world_size=args.world_size, rank=args.rank)
+    
     torch.distributed.barrier()
     setup_for_distributed(args.rank == 0)

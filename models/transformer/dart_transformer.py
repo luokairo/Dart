@@ -112,6 +112,13 @@ class DARTForT2I(PreTrainedModel):
         self.use_cross_attn = use_cross_attn = config.use_cross_attn
         self.context_token = context_token
 
+        # for mask 
+        mask_ratio_min = 0.5
+        self.mask_ratio_generator = stats.truncnorm(
+            (mask_ratio_min - 1.0) / 0.25, 0, loc=1.0, scale=0.25
+        )
+        # for mask
+
         vae_local = DARTAutoEncoderWithDisc.from_pretrained(vae_path).vae
         vae_local = vae_local.cuda()
         vae_local.requires_grad_(False)
@@ -149,7 +156,7 @@ class DARTForT2I(PreTrainedModel):
         self.word_embed = nn.Linear(self.Cvae, self.C)
         self.router = DARTRouterMlp(
             seq_dim=self.C,
-            embedding=self.C * self.context_token,
+            embedding=self.D * self.context_token,
             num_selector=2
         )
 
@@ -341,7 +348,7 @@ class DARTForT2I(PreTrainedModel):
             self.context_norm(
                 torch.cat((label_B, torch.full_like(label_B, fill_value=0.0)), dim=0)
             )
-        )
+        ) # B l D
         # Haotian: need to handle CFG here so we replicate context position ids
         context_position_ids = torch.cat(
             (context_position_ids, torch.full_like(context_position_ids, fill_value=0)),
@@ -371,7 +378,7 @@ class DARTForT2I(PreTrainedModel):
             )
 
         cur_L = 0
-        f_hat = sos.new_zeros(B, self.Cvae, self.patch_nums[-1], self.patch_nums[-1])
+        f_hat = sos.new_zeros(B, self.Cvae, self.patch_nums[-1], self.patch_nums[-1]) # B Cvae patch patch
 
         for b in self.blocks:
             b.attn.kv_caching(True)
@@ -398,8 +405,6 @@ class DARTForT2I(PreTrainedModel):
             #Jingyi: x is continuous
             logits_BlV = self.get_logits(x, cond_BD) # 2*B, l, vocab_size
             continuous_logits_BlV = self.get_continous_logits(x, cond_BD) # 2*B. l, Cvae
-            if si == self.num_stages_minus_1:
-                last_layer_cond = x
 
             t = cfg * ratio
             logits_BlV = (1 + t) * logits_BlV[:B] - t * logits_BlV[B:] # B, l, vocab_size
@@ -407,7 +412,7 @@ class DARTForT2I(PreTrainedModel):
             
             # Haotian: Added for text-conditioned generation
             if si == 0:
-                logits_BlV = logits_BlV[:, [-1], :]
+                logits_BlV = logits_BlV[:, [-1], :] # B, 1, Cvae
                 continuous_logits_BlV = continuous_logits_BlV[:, [-1], :]
 
             idx_Bl = sample_with_top_k_top_p_(
@@ -425,15 +430,15 @@ class DARTForT2I(PreTrainedModel):
                     logits_BlV.mul(1 + ratio), tau=gum_t, hard=False, dim=-1, rng=rng
                 ) @ self.vae_quant_proxy[0].embedding.weight.unsqueeze(0)
             # Jingyi: using router for h_BChw
-            h_BChw = self.router(continuous_logits_BlV, h_BChw, label_B)
+            h_BChw = self.router(continuous_logits_BlV, h_BChw, cond_BD)
             
             h_BChw = h_BChw.transpose(1, 2).reshape(B, self.Cvae, pn, pn)
 
             f_hat, next_token_map = self.vae_quant_proxy[0].get_next_autoregressive_input(
                 si, len(self.patch_nums), f_hat, h_BChw, patch_nums=self.patch_nums
-            )
+            ) # next_token_map (B, si, si)
 
-            next_token_map = next_token_map.view(B, self.Cvae, -1).transpose(1, 2) # B, Cvae, si*si
+            next_token_map = next_token_map.view(B, self.Cvae, -1).transpose(1, 2) # B, si*si, Cave
             next_token_map = (
                 self.word_embed(next_token_map)
                 + lvl_pos[:, cur_L : cur_L + self.patch_nums[si + 1] ** 2]
@@ -713,6 +718,125 @@ class DARTForT2I(PreTrainedModel):
             mask_wo_prev_stages,
 
         )  # logits BLV, V is vocab_size
+
+    def forward2(
+        self,
+        context: torch.Tensor,
+        x_BLCv_wo_first_l: torch.Tensor,
+        context_position_ids: torch.Tensor,
+        context_mask: torch.Tensor,
+        last_layer_gt: torch.Tensor = None,
+        last_layer_gt_discrete: torch.Tensor = None,
+    ) -> torch.Tensor: # return logits_BLV
+        bg, ed = (
+            self.begin_ends[self.prog_si]
+            if self.prog_si >= 0
+            else (0, self.L + self.context_token - 1)
+        )
+        B = x_BLCv_wo_first_l[0]
+        orders = self.sample_orders(bsz=B)
+        mask, mask_wo_prev_stages = self.random_masking(
+            x_BLCv_wo_first_l[:, -self.last_level_pns :, :], orders
+        )
+        mask_for_attn = (1 - mask)[:, self.context_token :].nonzero(as_tuple=True)
+        mask = (1 - mask).nonzero(as_tuple=True)
+        mask_wo_prev_stages = (1 - mask_wo_prev_stages).nonzero(as_tuple=True)
+        last_layer_gt = last_layer_gt[mask_wo_prev_stages].reshape(
+            B, -1, last_layer_gt.shape[-1]
+        )
+        last_layer_gt_discrete = last_layer_gt_discrete[mask_wo_prev_stages].reshape(
+            B, -1
+        )
+        ed = (
+            last_layer_gt.shape[1]
+            + self.L
+            + self.context_token
+            - 1
+            - self.last_level_pns
+        )
+
+        with torch.cuda.amp.autocast(enabled=False):
+            drop_pos = torch.where(
+                torch.rand(B, device=context.device) < self.cond_drop_rate
+            )[0]
+            context[drop_pos] *= 0
+
+            sos = cond_BD = self.context_embed(self.context_norm(context)) # sos 是起始的文本tokens
+            if self.pos_start is not None:
+                sos = sos.expand(B, self.first_l, -1) + self.pos_start.expand(
+                    B, self.first_l, -1
+                )
+            else:
+                sos = sos.expand(B, self.first_l, -1)
+            
+            if self.prog_si == 0:
+                x_BLC = sos
+            else:
+                x_BLC = torch.cat(
+                    (sos, self.word_embed(x_BLCv_wo_first_l.float())), dim=1
+                )
+
+            x_BLC = x_BLC[mask].reshape(B, -1, x_BLC.shape[-1])
+        
+        attn_bias = self.attn_bias_for_masking[:, :, :ed, :ed]
+        cond_BD_or_gss = self.shared_ada_lin(cond_BD)
+
+        # hack: get the dtype if mixed precision is used
+        temp = x_BLC.new_ones(8, 8)
+        main_type = torch.matmul(temp, temp).dtype
+
+        x_BLC = x_BLC.to(dtype=main_type)
+        cond_BD_or_gss = cond_BD_or_gss.to(dtype=main_type)
+        attn_bias = attn_bias.to(dtype=main_type)
+
+        AdaLNSelfAttn.forward
+        for i, b in enumerate(self.blocks):
+            if self.gradient_checkpointing:
+                x_BLC = self._gradient_checkpointing_func(
+                    b.forward_function,
+                    x_BLC,
+                    cond_BD_or_gss,
+                    attn_bias,
+                    mask_for_attn,
+                    context_position_ids,
+                    context_mask,
+                )
+            else:
+                x_BLC = b(
+                    x=x_BLC,
+                    cond_BD=cond_BD_or_gss,
+                    attn_bias=attn_bias,
+                    m_maskgit=mask_for_attn,
+                    context_position_ids=context_position_ids,
+                    context_mask=context_mask,
+                )
+
+        x_BLC_logits, last_layer_cond = (
+            x_BLC,
+            x_BLC[:, self.L + self.context_token - 1 - self.last_level_pns :, :],
+        )
+
+        x_BLC_logits = self.get_logits(x_BLC_logits.float(), cond_BD)
+        with torch.no_grad():
+            try:
+                idx_BL_sampled = sample_with_top_k_top_p_(
+                x_BLC_logits[
+                    :, self.L + self.context_token - 1 - self.last_level_pns :
+                ]
+                .clone()
+                .detach(),
+                rng=self.rng,
+                top_k=600,
+                top_p=0.96,
+                num_samples=1,
+                )[:, :, 0]
+            except:
+                idx_BL_sampled = last_layer_gt_discrete
+        last_stage_discrete_embed = self.vae_quant_proxy[0].embedding(idx_BL_sampled)
+        last_stage_discrete_cond = self.word_embed(last_stage_discrete_embed)
+        last_layer_cond = self.decoder_norm(last_layer_cond + last_stage_discrete_cond)
+
+        last_layer_gt_continuous = last_layer_gt - last_stage_discrete_embed
 
     
     def init_weights(

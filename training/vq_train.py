@@ -17,7 +17,6 @@ from dart.utils import data
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
-import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
@@ -28,19 +27,26 @@ import time
 import argparse
 from glob import glob
 from copy import deepcopy
+import torch._inductor.config
+
 
 from dart.models.autoencoder import (
     DartHybridQuantizer,
     DARTAutoEncoder,
     DARTAutoEncoderWithDisc
 )
-from dart.training.vq_loss import VQLoss
+from dart.training.vq_loss import VQLoss, torch_cov, calculate_fid
 from dart.utils.distributed import init_distributed_mode
 from dart.utils.ema import update_ema, requires_grad
 from dart.utils.logger import create_logger
 from dart.dataset.augmentation import random_crop_arr
 from dart.dataset.build import build_dataset
 from tqdm import tqdm
+from torchvision.models import inception_v3
+import torch.distributed as dist
+
+if dist.is_initialized():
+    dist.destroy_process_group()
 
 #################################################################################
 #                                  Training Loop                                #
@@ -96,6 +102,10 @@ def main(args):
         requires_grad(ema, False)
         logger.info(f"VQ Model EMA Parameters: {sum(p.numel() for p in ema.parameters()):,}")
     vae_model = vae_model.to(device)
+    inception_model = inception_v3(pretrained=True).to(device)
+    inception_model.eval()
+
+    print(vae_model.config)
     
     vq_loss = VQLoss(
         disc_start=args.disc_start,
@@ -163,6 +173,7 @@ def main(args):
         seed=args.global_seed
     )
     loader = DataLoader(
+        dataset=dataset,
         batch_size=int(args.global_batch_size // dist.get_world_size()),
         shuffle=False,
         sampler=sampler,
@@ -256,21 +267,50 @@ def main(args):
     # Initialize wandb
     if rank == 0:
         import wandb
-        wandb.init(project="cloud-VQ", config=args)
+        wandb.init(project="cloud-VQ-256", config=args)
 
     # Begin to trainging
     for epoch in tqdm(range(start_epoch, args.epochs)):
         sampler.set_epoch(epoch)
         logger.info(f"Begin epoch {epoch}...")
 
+        running_rfid = 0
+        running_gfid = 0
+
         for x, _ in tqdm(loader):
             imgs = x.to(device, non_blocking=True)
 
             # generator training
             optimizer.zero_grad()
-            with torch.cuda.amp.autocast(dtype=ptdtype):
+            with torch.amp.autocast('cuda', dtype=ptdtype):
                 out = vae_model(imgs)
                 recons_imgs, usages, codebook_loss = out["out"], out["usages"], out["vq_loss"]
+
+                # Jingyi: calculate FID for every batch
+                with torch.no_grad():
+                    real_feat = inception_model(imgs)
+                    gen_feat = inception_model(recons_imgs)
+
+                    real_mu = torch.mean(real_feat, dim=0)
+                    real_sigma = torch_cov(real_feat.transpose(0, 1))
+                
+                    gen_mu = torch.mean(gen_feat, dim=0)
+                    gen_sigma = torch_cov(gen_feat.transpose(0, 1))
+
+                    # calculate FID
+                    rfid = calculate_fid(real_mu, real_sigma, gen_mu, gen_sigma)
+
+                    # 生成随机样本计算gFID
+                    random_latents = torch.randn(len(imgs), args.z_channels, args.last_patch_num, args.last_patch_num).to(device)  # 修改为正确的shape， 不同的
+                    random_samples = vae_model.module.decoder(random_latents)
+                    random_features = inception_model(random_samples)
+                    random_mu = torch.mean(random_features, dim=0)
+                    random_sigma = torch_cov(random_features.transpose(0, 1))
+                    gfid = calculate_fid(real_mu, real_sigma, random_mu, random_sigma)
+                    
+                    # 累积FID值
+                    running_rfid += rfid.item()
+                    running_gfid += gfid.item()
 
                 loss_gen, loss_dict_gen = vq_loss(
                     codebook_loss=codebook_loss,
@@ -297,7 +337,7 @@ def main(args):
 
             # discriminator training
             optimizer_disc.zero_grad()
-            with torch.cuda.amp.autocast(dtype=ptdtype):
+            with torch.amp.autocast('cuda', dtype=ptdtype):
                 loss_disc, loss_dict_disc = vq_loss(
                     codebook_loss=codebook_loss,
                     usages=usages,
@@ -320,6 +360,11 @@ def main(args):
 
             log_steps += 1
             train_steps += 1
+
+            loss_dict_gen.update({
+                        'metrics/batch_rFID': rfid.item(),
+                        'metrics/batch_gFID': gfid.item()
+                    })
             if train_steps % args.log_every == 0:
                 # Measure training speed:
                 torch.cuda.synchronize()
@@ -329,14 +374,30 @@ def main(args):
                 avg_loss = torch.tensor(running_loss / log_steps, device=device)
                 dist.all_reduce(avg_loss, op=dist.ReduceOp.SUM)
                 avg_loss = avg_loss.item() / dist.get_world_size()
-                logger.info(
-                    f"(step={train_steps:07d}) Train Loss: {avg_loss:.4f}, Train Steps/Sec: {steps_per_sec:.2f}")
 
+                # Jingyi: 计算平均FID值
+                avg_rfid = running_rfid / log_steps
+                avg_gfid = running_gfid / log_steps
+                
+                # Jingyi: 更新loss字典，加入平均FID值
+                loss_dict_gen.update({
+                    'metrics/avg_rFID': avg_rfid,
+                    'metrics/avg_gFID': avg_gfid
+                })
+                
+                logger.info(
+                    f"(step={train_steps:07d}) Train Loss: {avg_loss:.4f}, "
+                    f"Batch rFID: {rfid.item():.4f}, Batch gFID: {gfid.item():.4f}, "
+                    f"Avg rFID: {avg_rfid:.4f}, Avg gFID: {avg_gfid:.4f}, "
+                    f"Train Steps/Sec: {steps_per_sec:.2f}")
+                
                 if rank == 0:
                     wandb.log({**loss_dict_gen, **loss_dict_disc}, step=train_steps)
 
                 # Reset monitoring variables:
                 running_loss = 0
+                running_rfid = 0
+                running_gfid = 0
                 log_steps = 0
                 start_time = time.time()
 
@@ -389,18 +450,20 @@ if __name__ == "__main__":
     parser.add_argument("--vae-ckpt", type=str, default=None, help="Checkpoint path for resuming training")
     parser.add_argument("--ema", action='store_true', help="Whether to use EMA during training")
     parser.add_argument("--finetune", action='store_true', help="Whether to finetune a pre-trained model")
-    parser.add_argument("--finetune-decoder", default=True, help="Whether to only finetune decoder")
+    parser.add_argument("--finetune-decoder", action='store_true', help="Whether to only finetune decoder")
     parser.add_argument("--enhanced-decoder", action='store_true', help="Whether to use enhanced decoder")
     parser.add_argument("--kmeans", default=True, help="Whether to use kmeans for codebook initialization")
+    parser.add_argument("--last_patch_num", default=16, help="v_patch_nums[-1]")
+    parser.add_argument("--z_channels", default=32)
 
     # Training parameters
-    parser.add_argument("--dataset", type=str, default="dyb", help="Name of training dataset")
+    parser.add_argument("--dataset", type=str, default="openimage", help="Name of training dataset")
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--beta1", type=float, default=0.9, help="Beta1 for Adam optimizer")
     parser.add_argument("--beta2", type=float, default=0.95, help="Beta2 for Adam optimizer")
     parser.add_argument("--max-grad-norm", type=float, default=1.0, help="Maximum gradient norm")
-    parser.add_argument("--global-batch-size", type=int, default=512, help="Global batch size across all GPUs")
+    parser.add_argument("--global-batch-size", type=int, default=128, help="Global batch size across all GPUs")
     parser.add_argument("--global-seed", type=int, default=0, help="Global random seed")
     parser.add_argument("--mixed-precision", type=str, default='none', 
                       choices=["none", "fp16", "bf16"], help="Mixed precision training mode")
@@ -420,12 +483,12 @@ if __name__ == "__main__":
     parser.add_argument("--codebook-weight", type=float, default=1.0, help="Weight for codebook loss")
 
     # Image processing
-    parser.add_argument("--image-size", type=int, default=256, choices=[224, 256, 384], 
+    parser.add_argument("--image-size", type=int, default=256, choices=[256, 512, 1024], 
                       help="Input image size")
 
     # Logging and checkpointing
     parser.add_argument("--log-every", type=int, default=100, help="Log frequency in steps")
-    parser.add_argument("--ckpt-every", type=int, default=5000, help="Checkpoint saving frequency in steps")
+    parser.add_argument("--ckpt-every", type=int, default=1000, help="Checkpoint saving frequency in steps")
     parser.add_argument("--no-local-save", action='store_true', 
                       help="Don't save checkpoints locally (for limited disk space)")
     parser.add_argument('--finetune_decoder', action='store_true', help='finetune decoder')

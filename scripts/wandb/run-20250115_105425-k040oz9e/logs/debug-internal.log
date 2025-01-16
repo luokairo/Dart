@@ -1,0 +1,16 @@
+{"time":"2025-01-15T10:54:25.653133034-05:00","level":"INFO","msg":"using version","core version":"0.18.7"}
+{"time":"2025-01-15T10:54:25.659561945-05:00","level":"INFO","msg":"created symlink","path":"/fs/scratch/PAS2473/ICML2025/dart/scripts/wandb/run-20250115_105425-k040oz9e/logs/debug-core.log"}
+{"time":"2025-01-15T10:54:26.099743614-05:00","level":"INFO","msg":"created new stream","id":"k040oz9e"}
+{"time":"2025-01-15T10:54:26.099834495-05:00","level":"INFO","msg":"stream: started","id":"k040oz9e"}
+{"time":"2025-01-15T10:54:26.099969208-05:00","level":"INFO","msg":"handler: started","stream_id":"k040oz9e"}
+{"time":"2025-01-15T10:54:26.100711623-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"k040oz9e"}
+{"time":"2025-01-15T10:54:26.100735819-05:00","level":"INFO","msg":"sender: started","stream_id":"k040oz9e"}
+{"time":"2025-01-15T10:54:26.421911037-05:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-01-15T10:55:04.726000628-05:00","level":"INFO","msg":"stream: closing","id":"k040oz9e"}
+{"time":"2025-01-15T10:55:04.726061723-05:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-01-15T10:55:04.72665647-05:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-01-15T10:55:06.195160907-05:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-01-15T10:55:06.350352095-05:00","level":"INFO","msg":"handler: closed","stream_id":"k040oz9e"}
+{"time":"2025-01-15T10:55:06.350516243-05:00","level":"INFO","msg":"writer: Close: closed","stream_id":"k040oz9e"}
+{"time":"2025-01-15T10:55:06.350724675-05:00","level":"INFO","msg":"sender: closed","stream_id":"k040oz9e"}
+{"time":"2025-01-15T10:55:06.351206049-05:00","level":"INFO","msg":"stream: closed","id":"k040oz9e"}

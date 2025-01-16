@@ -226,6 +226,21 @@ class DARTAutoEncoder(PreTrainedModel):
             v_patch_nums=v_patch_nums,
             exception_stages=exception_stages,
         )
+
+    def img_to_x_BLCv(
+        self,
+        inp_img_no_grad: torch.Tensor,
+        v_patch_nums: Optional[Sequence[Union[int, Tuple[int, int]]]] = None,
+    )  -> torch.Tensor:
+        f = self.quant_conv(self.ecnoder(inp_img_no_grad))
+        B, C, H, W = f.shape
+        f_no_grad = f.detach()
+        patch_hws = [(pn, pn) if isinstance(pn, int) else (pn[0], pn[1]) for pn in (v_patch_nums or self.v_patch_nums)]
+        assert patch_hws[-1][0] == H and patch_hws[-1][1] == W, f'{patch_hws[-1]=} != ({H=}, {W=})'
+
+        SN = len(patch_hws)
+        for si, (ph, pw) in enumerate(patch_hws): # from small to large
+            if 0 <= self.prog_si < si: break
     
     def img_to_idxBl_and_frest(
         self,

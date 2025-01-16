@@ -44,6 +44,32 @@ def adopt_weight(weight, global_step, threshold=0, value=0.):
         weight = value
     return weight
 
+def torch_cov(x):
+    """计算输入张量的协方差矩阵"""
+    mean = torch.mean(x, dim=1, keepdim=True)
+    x = x - mean
+    return torch.matmul(x, x.transpose(0, 1)) / (x.size(1) - 1)
+
+def calculate_fid(mu1, sigma1, mu2, sigma2):
+    """计算两个分布之间的Frechet Inception Distance (FID)"""
+    diff = mu1 - mu2
+
+    # 计算协方差矩阵的平方根
+    try:
+        u, s, v = torch.svd(torch.matmul(sigma1, sigma2))
+        covmean = u @ torch.diag(torch.sqrt(s)) @ v.T
+    except RuntimeError as e:
+        print(f"Error computing matrix square root: {e}")
+        raise
+
+    # 处理可能的复数值
+    if torch.is_complex(covmean):
+        covmean = torch.real(covmean)
+    
+    tr_covmean = torch.trace(covmean)
+    
+    return torch.sum(diff * diff) + torch.trace(sigma1) + torch.trace(sigma2) - 2 * tr_covmean
+
 class VQLoss(nn.Module):
     def __init__(self, disc_start, disc_loss="hinge", disc_dim=64, disc_type='patchgan', image_size=256,
                  disc_num_layers=3, disc_in_channels=3, disc_weight=1.0, disc_adaptive_weight=False,

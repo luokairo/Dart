@@ -1,0 +1,51 @@
+  0%|                                                                                                                                                               | 0/100 [00:00<?, ?it/s][[34m2025-01-13 23:32:19[0m] Begin epoch 0...
+                                                                                                                                                                                            /fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/quantize/dart_quantize.py:47: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):                                                                                                                    | 0/13617 [00:00<?, ?it/s]
+/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py:304: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(dtype=ptdtype):
+                                                                                                                                                                                            [[34m2025-01-13 23:34:14[0m] (Generator) rec_loss: 0.0106, perceptual_loss: 0.1069, vq_loss: 0.4698,codebook_usage: 100.0000, generator_adv_loss: -0.0000, disc_adaptive_weight: 1.0000, disc_weight: 0.0000
+[[34m2025-01-13 23:34:15[0m] (Discriminator) discriminator_adv_loss: 0.0000, disc_weight: 0.0000, logits_real: 0.6141, logits_fake: 0.6133           | 99/13617 [01:54<4:06:06,  1.09s/it]
+[[34m2025-01-13 23:34:15[0m] (step=0000100) Train Loss: 0.6593, Train Steps/Sec: 0.83
+                                                                                                                                                                                            /fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/quantize/dart_quantize.py:47: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):                                                                                                        | 100/13617 [02:00<9:29:12,  2.53s/it]
+/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py:304: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(dtype=ptdtype):
+                                                                                                                                                                                            [[34m2025-01-13 23:36:08[0m] (Generator) rec_loss: 0.0090, perceptual_loss: 0.0931, vq_loss: 0.5036,codebook_usage: 100.0000, generator_adv_loss: -0.2970, disc_adaptive_weight: 1.0000, disc_weight: 0.5000
+[[34m2025-01-13 23:36:09[0m] (Discriminator) discriminator_adv_loss: 0.5704, disc_weight: 0.5000, logits_real: 0.5951, logits_fake: 0.5940          | 199/13617 [03:48<4:04:12,  1.09s/it]
+[[34m2025-01-13 23:36:09[0m] (step=0000200) Train Loss: 0.6529, Train Steps/Sec: 0.92
+                                                                                                                                                                                            [[34m2025-01-13 23:37:57[0m] (Generator) rec_loss: 0.0118, perceptual_loss: 0.1059, vq_loss: 0.5236,codebook_usage: 100.0000, generator_adv_loss: 0.0832, disc_adaptive_weight: 1.0000, disc_weight: 0.5000
+[[34m2025-01-13 23:37:58[0m] (Discriminator) discriminator_adv_loss: 0.5027, disc_weight: 0.5000, logits_real: -0.1767, logits_fake: -0.1664        | 299/13617 [05:37<4:02:14,  1.09s/it]
+[[34m2025-01-13 23:37:58[0m] (step=0000300) Train Loss: 1.1780, Train Steps/Sec: 0.92
+                                                                                                                                                                                            [[34m2025-01-13 23:39:47[0m] (Generator) rec_loss: 0.0140, perceptual_loss: 0.1179, vq_loss: 0.4933,codebook_usage: 100.0000, generator_adv_loss: -0.0285, disc_adaptive_weight: 1.0000, disc_weight: 0.5000
+[[34m2025-01-13 23:39:47[0m] (Discriminator) discriminator_adv_loss: 0.5006, disc_weight: 0.5000, logits_real: 0.0550, logits_fake: 0.0570          | 399/13617 [07:27<4:00:31,  1.09s/it]
+[[34m2025-01-13 23:39:47[0m] (step=0000400) Train Loss: 1.1704, Train Steps/Sec: 0.92
+                                                                                                                                                                                            [[34m2025-01-13 23:41:36[0m] (Generator) rec_loss: 0.0116, perceptual_loss: 0.0976, vq_loss: 0.5391,codebook_usage: 100.0000, generator_adv_loss: 0.1683, disc_adaptive_weight: 1.0000, disc_weight: 0.5000
+[[34m2025-01-13 23:41:36[0m] (Discriminator) discriminator_adv_loss: 0.5006, disc_weight: 0.5000, logits_real: -0.3374, logits_fake: -0.3366        | 499/13617 [09:16<3:58:47,  1.09s/it]
+[[34m2025-01-13 23:41:36[0m] (step=0000500) Train Loss: 1.1762, Train Steps/Sec: 0.92
+[[34m2025-01-13 23:41:37[0m] Saved checkpoint to /fs/scratch/PAS2473/ICML2025/result/vqvae/1024/017-DART_tokenizer/checkpoints/0000500.pt
+[[34m2025-01-13 23:41:38[0m] Saved checkpoint in cloud to /fs/scratch/PAS2473/ICML2025/logs/vqgan/1024/2025-01-13-23-32-12/017-DART_tokenizer/checkpoints/0000500.pt
+                                                                                                                                                                                            [[34m2025-01-13 23:43:26[0m] (Generator) rec_loss: 0.0113, perceptual_loss: 0.0948, vq_loss: 0.5958,codebook_usage: 100.0000, generator_adv_loss: -0.0094, disc_adaptive_weight: 1.0000, disc_weight: 0.5000
+[[34m2025-01-13 23:43:27[0m] (Discriminator) discriminator_adv_loss: 0.5007, disc_weight: 0.5000, logits_real: 0.0171, logits_fake: 0.0189          | 599/13617 [11:06<3:56:47,  1.09s/it]
+[[34m2025-01-13 23:43:27[0m] (step=0000600) Train Loss: 1.1855, Train Steps/Sec: 0.90
+  5%|███████▏                                                                                                                                         | 680/13617 [12:36<3:59:48,  1.11s/it]
+  0%|                                                                                                                                                               | 0/100 [12:36<?, ?it/s]
+Traceback (most recent call last):
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 437, in <module>
+    main(args)
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 295, in main
+    torch.nn.utils.clip_grad_norm_(vae_model.parameters(), args.max_grad_norm)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/utils/clip_grad.py", line 30, in _no_grad_wrapper
+    return func(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/utils/clip_grad.py", line 109, in clip_grad_norm_
+    clip_coef_clamped = torch.clamp(clip_coef, max=1.0)
+KeyboardInterrupt
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 437, in <module>
+[rank0]:     main(args)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 295, in main
+[rank0]:     torch.nn.utils.clip_grad_norm_(vae_model.parameters(), args.max_grad_norm)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/utils/clip_grad.py", line 30, in _no_grad_wrapper
+[rank0]:     return func(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/utils/clip_grad.py", line 109, in clip_grad_norm_
+[rank0]:     clip_coef_clamped = torch.clamp(clip_coef, max=1.0)
+[rank0]: KeyboardInterrupt

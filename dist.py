@@ -1,103 +1,211 @@
-import numpy as np
+import datetime
+import functools
+import os
+import sys
+from typing import List
+from typing import Union
+
 import torch
-from torch.utils.data.sampler import Sampler
+import torch.distributed as tdist
+import torch.multiprocessing as mp
+
+__rank, __local_rank, __world_size, __device = 0, 0, 1, 'cuda' if torch.cuda.is_available() else 'cpu'
+__initialized = False
 
 
-class EvalDistributedSampler(Sampler):
-    def __init__(self, dataset, num_replicas, rank):
-        seps = np.linspace(0, len(dataset), num_replicas+1, dtype=int)
-        beg, end = seps[:-1], seps[1:]
-        beg, end = beg[rank], end[rank]
-        self.indices = tuple(range(beg, end))
+def initialized():
+    return __initialized
+
+
+def initialize(fork=False, backend='nccl', gpu_id_if_not_distibuted=0, timeout=30):
+    global __device
+    if not torch.cuda.is_available():
+        print(f'[dist initialize] cuda is not available, use cpu instead', file=sys.stderr)
+        return
+    elif 'RANK' not in os.environ:
+        torch.cuda.set_device(gpu_id_if_not_distibuted)
+        __device = torch.empty(1).cuda().device
+        print(f'[dist initialize] env variable "RANK" is not set, use {__device} as the device', file=sys.stderr)
+        return
+    # then 'RANK' must exist
+    global_rank, num_gpus = int(os.environ['RANK']), torch.cuda.device_count()
+    local_rank = global_rank % num_gpus
+    torch.cuda.set_device(local_rank)
     
-    def __iter__(self):
-        return iter(self.indices)
+    # ref: https://github.com/open-mmlab/mmcv/blob/master/mmcv/runner/dist_utils.py#L29
+    if mp.get_start_method(allow_none=True) is None:
+        method = 'fork' if fork else 'spawn'
+        print(f'[dist initialize] mp method={method}')
+        mp.set_start_method(method)
+    tdist.init_process_group(backend=backend, timeout=datetime.timedelta(seconds=timeout*60))
     
-    def __len__(self) -> int:
-        return len(self.indices)
+    global __rank, __local_rank, __world_size, __initialized
+    __local_rank = local_rank
+    __rank, __world_size = tdist.get_rank(), tdist.get_world_size()
+    __device = torch.empty(1).cuda().device
+    __initialized = True
+    
+    assert tdist.is_initialized(), 'torch.distributed is not initialized!'
+    print(f'[lrk={get_local_rank()}, rk={get_rank()}]')
 
 
-class InfiniteBatchSampler(Sampler):
-    def __init__(self, dataset_len, batch_size, seed_for_all_rank=0, fill_last=False, shuffle=True, drop_last=False, start_ep=0, start_it=0):
-        self.dataset_len = dataset_len
-        self.batch_size = batch_size
-        self.iters_per_ep = dataset_len // batch_size if drop_last else (dataset_len + batch_size - 1) // batch_size
-        self.max_p = self.iters_per_ep * batch_size
-        self.fill_last = fill_last
-        self.shuffle = shuffle
-        self.epoch = start_ep
-        self.same_seed_for_all_ranks = seed_for_all_rank
-        self.indices = self.gener_indices()
-        self.start_ep, self.start_it = start_ep, start_it
-    
-    def gener_indices(self):
-        if self.shuffle:
-            g = torch.Generator()
-            g.manual_seed(self.epoch + self.same_seed_for_all_ranks)
-            indices = torch.randperm(self.dataset_len, generator=g).numpy()
+def get_rank():
+    return __rank
+
+
+def get_local_rank():
+    return __local_rank
+
+
+def get_world_size():
+    return __world_size
+
+
+def get_device():
+    return __device
+
+
+def set_gpu_id(gpu_id: int):
+    if gpu_id is None: return
+    global __device
+    if isinstance(gpu_id, (str, int)):
+        torch.cuda.set_device(int(gpu_id))
+        __device = torch.empty(1).cuda().device
+    else:
+        raise NotImplementedError
+
+
+def is_master():
+    return __rank == 0
+
+
+def is_local_master():
+    return __local_rank == 0
+
+
+def new_group(ranks: List[int]):
+    if __initialized:
+        return tdist.new_group(ranks=ranks)
+    return None
+
+
+def barrier():
+    if __initialized:
+        tdist.barrier()
+
+
+def allreduce(t: torch.Tensor, async_op=False):
+    if __initialized:
+        if not t.is_cuda:
+            cu = t.detach().cuda()
+            ret = tdist.all_reduce(cu, async_op=async_op)
+            t.copy_(cu.cpu())
         else:
-            indices = torch.arange(self.dataset_len).numpy()
-        
-        tails = self.batch_size - (self.dataset_len % self.batch_size)
-        if tails != self.batch_size and self.fill_last:
-            tails = indices[:tails]
-            np.random.shuffle(indices)
-            indices = np.concatenate((indices, tails))
-        
-        # built-in list/tuple is faster than np.ndarray (when collating the data via a for-loop)
-        # noinspection PyTypeChecker
-        return tuple(indices.tolist())
-    
-    def __iter__(self):
-        self.epoch = self.start_ep
-        while True:
-            self.epoch += 1
-            p = (self.start_it * self.batch_size) if self.epoch == self.start_ep else 0
-            while p < self.max_p:
-                q = p + self.batch_size
-                yield self.indices[p:q]
-                p = q
-            if self.shuffle:
-                self.indices = self.gener_indices()
-    
-    def __len__(self):
-        return self.iters_per_ep
+            ret = tdist.all_reduce(t, async_op=async_op)
+        return ret
+    return None
 
 
-class DistInfiniteBatchSampler(InfiniteBatchSampler):
-    def __init__(self, world_size, rank, dataset_len, glb_batch_size, same_seed_for_all_ranks=0, repeated_aug=0, fill_last=False, shuffle=True, start_ep=0, start_it=0):
-        assert glb_batch_size % world_size == 0
-        self.world_size, self.rank = world_size, rank
-        self.dataset_len = dataset_len
-        self.glb_batch_size = glb_batch_size
-        self.batch_size = glb_batch_size // world_size
+def allgather(t: torch.Tensor, cat=True) -> Union[List[torch.Tensor], torch.Tensor]:
+    if __initialized:
+        if not t.is_cuda:
+            t = t.cuda()
+        ls = [torch.empty_like(t) for _ in range(__world_size)]
+        tdist.all_gather(ls, t)
+    else:
+        ls = [t]
+    if cat:
+        ls = torch.cat(ls, dim=0)
+    return ls
+
+
+def allgather_diff_shape(t: torch.Tensor, cat=True) -> Union[List[torch.Tensor], torch.Tensor]:
+    if __initialized:
+        if not t.is_cuda:
+            t = t.cuda()
         
-        self.iters_per_ep = (dataset_len + glb_batch_size - 1) // glb_batch_size
-        self.fill_last = fill_last
-        self.shuffle = shuffle
-        self.repeated_aug = repeated_aug
-        self.epoch = start_ep
-        self.same_seed_for_all_ranks = same_seed_for_all_ranks
-        self.indices = self.gener_indices()
-        self.start_ep, self.start_it = start_ep, start_it
-    
-    def gener_indices(self):
-        global_max_p = self.iters_per_ep * self.glb_batch_size  # global_max_p % world_size must be 0 cuz glb_batch_size % world_size == 0
-        # print(f'global_max_p = iters_per_ep({self.iters_per_ep}) * glb_batch_size({self.glb_batch_size}) = {global_max_p}')
-        if self.shuffle:
-            g = torch.Generator()
-            g.manual_seed(self.epoch + self.same_seed_for_all_ranks)
-            global_indices = torch.randperm(self.dataset_len, generator=g)
-            if self.repeated_aug > 1:
-                global_indices = global_indices[:(self.dataset_len + self.repeated_aug - 1) // self.repeated_aug].repeat_interleave(self.repeated_aug, dim=0)[:global_max_p]
+        t_size = torch.tensor(t.size(), device=t.device)
+        ls_size = [torch.empty_like(t_size) for _ in range(__world_size)]
+        tdist.all_gather(ls_size, t_size)
+        
+        max_B = max(size[0].item() for size in ls_size)
+        pad = max_B - t_size[0].item()
+        if pad:
+            pad_size = (pad, *t.size()[1:])
+            t = torch.cat((t, t.new_empty(pad_size)), dim=0)
+        
+        ls_padded = [torch.empty_like(t) for _ in range(__world_size)]
+        tdist.all_gather(ls_padded, t)
+        ls = []
+        for t, size in zip(ls_padded, ls_size):
+            ls.append(t[:size[0].item()])
+    else:
+        ls = [t]
+    if cat:
+        ls = torch.cat(ls, dim=0)
+    return ls
+
+
+def broadcast(t: torch.Tensor, src_rank) -> None:
+    if __initialized:
+        if not t.is_cuda:
+            cu = t.detach().cuda()
+            tdist.broadcast(cu, src=src_rank)
+            t.copy_(cu.cpu())
         else:
-            global_indices = torch.arange(self.dataset_len)
-        filling = global_max_p - global_indices.shape[0]
-        if filling > 0 and self.fill_last:
-            global_indices = torch.cat((global_indices, global_indices[:filling]))
-        # global_indices = tuple(global_indices.numpy().tolist())
-        
-        seps = torch.linspace(0, global_indices.shape[0], self.world_size + 1, dtype=torch.int)
-        local_indices = global_indices[seps[self.rank].item():seps[self.rank + 1].item()].tolist()
-        self.max_p = len(local_indices)
-        return local_indices
+            tdist.broadcast(t, src=src_rank)
+
+
+def dist_fmt_vals(val: float, fmt: Union[str, None] = '%.2f') -> Union[torch.Tensor, List]:
+    if not initialized():
+        return torch.tensor([val]) if fmt is None else [fmt % val]
+    
+    ts = torch.zeros(__world_size)
+    ts[__rank] = val
+    allreduce(ts)
+    if fmt is None:
+        return ts
+    return [fmt % v for v in ts.cpu().numpy().tolist()]
+
+
+def master_only(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        force = kwargs.pop('force', False)
+        if force or is_master():
+            ret = func(*args, **kwargs)
+        else:
+            ret = None
+        barrier()
+        return ret
+    return wrapper
+
+
+def local_master_only(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        force = kwargs.pop('force', False)
+        if force or is_local_master():
+            ret = func(*args, **kwargs)
+        else:
+            ret = None
+        barrier()
+        return ret
+    return wrapper
+
+
+def for_visualize(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if is_master():
+            # with torch.no_grad():
+            ret = func(*args, **kwargs)
+        else:
+            ret = None
+        return ret
+    return wrapper
+
+
+def finalize():
+    if __initialized:
+        tdist.destroy_process_group()

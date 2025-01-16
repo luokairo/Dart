@@ -5,6 +5,7 @@ from PIL import Image
 
 import torch
 from torch.utils.data import Dataset
+from torchvision.datasets import ImageFolder
 
 
 class DatasetJson(Dataset):
@@ -39,4 +40,4 @@ class DatasetJson(Dataset):
 
 
 def build_openimage(args, transform):
-    return DatasetJson(args.data_path, transform=transform)
+    return DatasetJson(args.data_path, transform)
