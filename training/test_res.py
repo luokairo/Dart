@@ -13,9 +13,9 @@ import numpy as np
 # 加载自编码器模型
 vae_path = "/Users/kairoliu/Documents/Dart/hart/tokenizer"
 vae = DARTAutoEncoderWithDisc.from_pretrained(vae_path, ignore_mismatched_sizes=True).vae
-
+print(vae.config)
 # 加载图像并进行预处理
-image_path = "/Users/kairoliu/Downloads/DYB-201203161316-0-118.jpg"  # 修改为你的图像路径
+image_path = "/Users/kairoliu/Downloads/2164.jpg"  # 修改为你的图像路径
 image = Image.open(image_path)
 
 # 保存原始图像的尺寸
@@ -23,7 +23,7 @@ original_size = image.size
 
 # 定义图像预处理（如调整大小、转换为张量、归一化）
 transform = transforms.Compose([
-    transforms.Resize((256, 256)),  # 调整为合适的输入尺寸
+    transforms.Resize((1024, 1024)),  # 调整为合适的输入尺寸
     transforms.ToTensor(),          # 转换为张量
     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # 根据模型的训练标准化
 ])
@@ -54,6 +54,8 @@ discrete_decoded_image = discrete_decoded_image.astype("uint8")
 continuous_decoded_image = continuous_decoded_image.squeeze().detach().cpu().numpy().transpose(1, 2, 0)  # 转换为 NumPy 数组
 continuous_decoded_image = (continuous_decoded_image * 0.5 + 0.5) * 255  # 恢复到原始范围 [0, 255]
 continuous_decoded_image = continuous_decoded_image.astype("uint8")
+print(discrete_decoded_image.shape)
+print(continuous_decoded_image.shape)
 
 # 将重构图像调整为与原始图像相同的大小
 discrete_decoded_image_pil = Image.fromarray(discrete_decoded_image)
@@ -61,6 +63,7 @@ discrete_decoded_image_resized = discrete_decoded_image_pil.resize(original_size
 
 continuous_decoded_image_pil = Image.fromarray(continuous_decoded_image)
 continuous_decoded_image_resized = continuous_decoded_image_pil.resize(original_size, Image.LANCZOS)
+
 
 # 计算 MSE（均方误差）
 original_image_np = np.array(image.resize(original_size))
