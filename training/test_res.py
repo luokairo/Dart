@@ -13,6 +13,14 @@ import numpy as np
 # 加载自编码器模型
 vae_path = "/Users/kairoliu/Documents/Dart/hart/tokenizer"
 vae = DARTAutoEncoderWithDisc.from_pretrained(vae_path, ignore_mismatched_sizes=True).vae
+# 加载权重并处理可能的键值不匹配
+state_dict = torch.load('/Users/kairoliu/Documents/Dart/hart/0009000.pt',
+                       map_location='cpu',
+                       weights_only=False)
+
+# 移除可能的'module.'前缀（如果模型之前使用了DataParallel）
+state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+vae.load_state_dict(state_dict, strict=False)  # strict=False允许部分权重不匹配
 print(vae.config)
 # 加载图像并进行预处理
 image_path = "/Users/kairoliu/Downloads/2164.jpg"  # 修改为你的图像路径
@@ -23,7 +31,7 @@ original_size = image.size
 
 # 定义图像预处理（如调整大小、转换为张量、归一化）
 transform = transforms.Compose([
-    transforms.Resize((1024, 1024)),  # 调整为合适的输入尺寸
+    transforms.Resize((256, 256)),  # 调整为合适的输入尺寸
     transforms.ToTensor(),          # 转换为张量
     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # 根据模型的训练标准化
 ])
@@ -35,6 +43,7 @@ encoded = vae.encoder(image_tensor)  # 假设 `encode` 方法是模型编码器�
 print(encoded.shape)
 encoded = vae.quant_conv(encoded)
 print(encoded.shape)
+print(vae.post_quant_conv(encoded).shape)
 
 # 使用 embed_to_img (离散tokens) 和 img_to_reconstructed_img (连续tokens) 重构图像
 discrete_decoded_images = vae.decoder(vae.post_quant_conv(encoded)).clamp(-1, 1)

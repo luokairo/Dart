@@ -219,7 +219,7 @@ class DARTAutoEncoder(PreTrainedModel):
         v_patch_nums: Optional[Sequence[Union[int, Tuple[int, int]]]] = None,
         exception_stages: Optional[Dict[int, torch.Tensor]] = None,
     ) -> List[torch.LongTensor]:  # return List[Bl]
-        f = self.quant_conv(self.encoder(inp_img_no_grad))
+        f = self.quant_conv(self.encoder(inp_img_no_grad)) # (B, Cvae, last_pn, last_pn)
         return self.quantize.f_to_idxBl_or_fhat(
             f,
             to_fhat=False,
@@ -295,6 +295,21 @@ class DARTAutoEncoder(PreTrainedModel):
         return self.quantize.embed_to_fhat(
             ms_h_BChw, all_to_max_scale=same_shape, last_one=last_one
         )
+    
+    # Jingyi: To get gt_Bl_dis
+    def idxBl_to_gt(
+        self, ms_idx_Bl: List[torch.Tensor], same_shape: bool, last_one=False
+    ) -> torch.Tensor:
+        B = ms_idx_Bl[0].shape[0]
+        ms_h_BChw = []
+        for idx_Bl in ms_idx_Bl:
+            l = idx_Bl.shape[1]
+            pn = round(l**0.5)
+            ms_h_BChw.append(
+                self.quantize.embedding(idx_Bl)
+            )
+        gt_Bl_dis = torch.cat(ms_h_BChw, dim=1)
+        return gt_Bl_dis
 
     def embed_to_img(
         self, ms_h_BChw: List[torch.Tensor], all_to_max_scale: bool, last_one=False

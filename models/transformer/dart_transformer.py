@@ -579,21 +579,20 @@ class DARTForT2I(PreTrainedModel):
         x_BLCv_wo_first_l: torch.Tensor,
         context_position_ids: torch.Tensor,
         context_mask: torch.Tensor,
-        last_layer_gt: torch.Tensor = None,
-        last_layer_gt_discrete: torch.Tensor = None,
+        last_layer_gt: torch.Tensor = None, # (B, ph, pw, Cvae)
+        last_layer_gt_discrete: torch.Tensor = None, # (B, ph, pw)
     ) -> torch.tensor: # returns logits_BLV
         """
         :param label_B: label_B
         :param x_BLCv_wo_first_l: teacher forcing input (B, self.L-self.first_l, self.Cvae)
         :return: logits BLV, V is vocab_size
         """
-
         bg, ed = (
             self.begin_ends[self.prog_si]
             if self.prog_si >= 0
             else (0, self.L + self.context_token - 1)
         )
-        B = x_BLCv_wo_first_l.shape[0]
+        B = x_BLCv_wo_first_l[0]
         orders = self.sample_orders(bsz=B)
         mask, mask_wo_prev_stages = self.random_masking(
             x_BLCv_wo_first_l[:, -self.last_level_pns :, :], orders
@@ -603,53 +602,44 @@ class DARTForT2I(PreTrainedModel):
         mask_wo_prev_stages = (1 - mask_wo_prev_stages).nonzero(as_tuple=True)
         last_layer_gt = last_layer_gt[mask_wo_prev_stages].reshape(
             B, -1, last_layer_gt.shape[-1]
-        )
+        ) # (B, ph * pw, Cvae)
         last_layer_gt_discrete = last_layer_gt_discrete[mask_wo_prev_stages].reshape(
             B, -1
-        )
+        ) # (B, ph * pw)
         ed = (
-            last_layer_gt.shape[1]
+            last_layer_gt[1]
             + self.L
             + self.context_token
-            - 1
+            -1
             - self.last_level_pns
         )
 
         with torch.cuda.amp.autocast(enabled=False):
             drop_pos = torch.where(
-                torch.randn(B, device=context.device) < self.cond_drop_rate
+                torch.rand(B, device=content.device) < self.cond_drop_rate
             )[0]
-            context[drop_pos] *= 0
+            content[drop_pos] *= 0
 
-            sos = cond_BD = self.context_embed(self.context_norm(context))
+            sos = cond_BD = self.context_token(self.context_norm(context)) # sos 是开始的文本
             if self.pos_start is not None:
                 sos = sos.expand(B, self.first_l, -1) + self.pos_start.expand(
                     B, self.first_l, -1
                 )
             else:
                 sos = sos.expand(B, self.first_l, -1)
-
+            
             if self.prog_si == 0:
                 x_BLC = sos
             else:
                 x_BLC = torch.cat(
                     (sos, self.word_embed(x_BLCv_wo_first_l.float())), dim=1
                 )
-            # apply maskgit
-            x_BLC = x_BLC[mask].reshape(B, -1, x_BLC.shape[-1])
-
-            if self.pos_1LC is not None:
-                x_BLC += (
-                        self.lvl_embed(self.lvl_1L[:, :ed].expand(B, -1))
-                        + self.pos_1LC[:, :ed]
-                )  # lvl: BLC;  pos: 1LC
-            else:
-                x_BLC += self.lvl_embed(self.lvl_1L[:, :ed].expand(B, -1))
-
+            
+            x_BLC = x_BLC[mask].reshape(B, -1, x_BLC[-1])
+        
         attn_bias = self.attn_bias_for_masking[:, :, :ed, :ed]
         cond_BD_or_gss = self.shared_ada_lin(cond_BD)
 
-        # hack: get the dtype if mixed precision is used
         temp = x_BLC.new_ones(8, 8)
         main_type = torch.matmul(temp, temp).dtype
 
@@ -678,47 +668,46 @@ class DARTForT2I(PreTrainedModel):
                     context_position_ids=context_position_ids,
                     context_mask=context_mask,
                 )
-        # parallel generation of discrete and continuous tokens
+
         x_BLC_logits, last_layer_cond = (
             x_BLC,
-            x_BLC[:, self.L + self.context_token - 1 - self.last_level_pns :, :]
+            x_BLC[:, self.L + self.context_token - 1 - self.last_level_pns :, :],
         )
 
-        x_BLC_logits = self.get_logits(x_BLC_logits.float(), cond_BD) # B L V
+        discrete_x_BLC_logits = self.get_logits(x_BLC_logits.float(), cond_BD)
         continuous_x_BLC_logits = self.get_continous_logits(x_BLC_logits.float(), cond_BD)
+
+        x_BLC_logits = self.router(continuous_x_BLC_logits,
+                                   discrete_x_BLC_logits,
+                                   cond_BD)
+        last_stage_continuous_embed = continuous_x_BLC_logits[
+            :, self.L + self.context_token - 1 - self.last_level_pns :, :
+        ]
+
         with torch.no_grad():
-            # important to clone the last stage logits
-            # Haotian: autoregressive LLM sometimes have this error:
-            # RuntimeError: probability tensor contains either `inf`, `nan` or element < 0
             try:
                 idx_BL_sampled = sample_with_top_k_top_p_(
-                    x_BLC_logits[
+                    discrete_x_BLC_logits[
                         :, self.L + self.context_token - 1 - self.last_level_pns :
-                    ]
-                    .clone()
-                    .detach(),
+                    ],
                     rng=self.rng,
                     top_k=600,
                     top_p=0.96,
-                    num_samples=1
-                )[:, :, 0]
+                    num_samples=1,
+                    )[:, :, 0]
             except:
                 idx_BL_sampled = last_layer_gt_discrete
         last_stage_discrete_embed = self.vae_quant_proxy[0].embedding(idx_BL_sampled)
-        last_stage_continuous_embed = continuous_x_BLC_logits
+        last_stage_embed = self.router(last_stage_continuous_embed,
+                                      last_stage_discrete_embed,
+                                      cond_BD) # (B, l, C)
 
-        last_satge_embed = self.router(last_stage_discrete_embed,
-                                       last_stage_continuous_embed,
-                                       cond_BD) # may change
-
-
-        # Haotian: important, we should start from self.context_token - 1.
         return (
-            x_BLC_logits[:, self.context_token - 1 :, :],
+            x_BLC_logits[:, self.context_token - 1 :, :], # (B, L, Cvae)
+            last_stage_embed,
             mask_wo_prev_stages,
-
-        )  # logits BLV, V is vocab_size
-
+        )
+        
     def forward2(
         self,
         context: torch.Tensor,

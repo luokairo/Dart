@@ -362,11 +362,70 @@ class VectorQuantizer2(nn.Module):
             torch.cat(next_scales, dim=1) if len(next_scales) else None
         )  # cat BlCs to BLC, this should be float32
 
-    # def f_to_x_BLCv(
-    #     self, 
-    #     f_BChw: torch.Tensor,
-    #     v_patch_nums: Optional[Sequence[Union[int, Tuple[int, int]]]] = None,
-    # )
+    # ===================== Jingyi:f_to_x_BLCv only used in VAR training, for getting teacher-forcing input =====================
+
+    def f_to_x_BLCv(
+        self, 
+        f_BChw: torch.Tensor,
+        v_patch_nums: Optional[Sequence[Union[int, Tuple[int, int]]]] = None,
+    ) -> torch.Tensor:
+        if v_patch_nums == None:
+            v_patch_nums = self.v_patch_nums
+        next_scales = []
+        B = f_BChw.shape[0]
+        C = self.Cvae
+        H = W = v_patch_nums[-1]
+        SN = len(v_patch_nums)
+
+        pn_next: int = v_patch_nums[0]
+        for si in range(SN):
+            if self.prog_si == 0 or (0 <= self.prog_si - 1 < si):
+                break  # progressive training: not supported yet, prog_si always -1
+            h_BChw = F.interpolate(
+                f_BChw,
+                size=(pn_next, pn_next),
+                mode="area"
+            ).view(B, C, -1).transpose(1, 2)
+            next_scales.append(h_BChw)
+            if pn_next != v_patch_nums[-1]:
+                pn_next = v_patch_nums[si + 1]
+        return (
+            torch.cat(next_scales, dim=1) if len(next_scales) else None
+        ) # cat BlCs to BLC, this should be float32
+        
+
+    def f_to_var_input(
+        self, 
+        f_BChw: torch.Tensor,
+        v_patch_nums: Optional[Sequence[Union[int, Tuple[int, int]]]] = None,
+    ) -> torch.Tensor:
+        if v_patch_nums == None:
+            v_patch_nums = self.v_patch_nums
+        next_scales = []
+        B = f_BChw.shape[0]
+        C = self.Cvae
+        H = W = v_patch_nums[-1]
+        SN = len(v_patch_nums)
+
+        pn_next: int = v_patch_nums[0]
+        for si in range(SN -1):
+            if self.prog_si == 0 or (0 <= self.prog_si - 1 < si):
+                break  # progressive training: not supported yet, prog_si always -1
+            h_BChw = F.interpolate(
+                f_BChw,
+                size=(pn_next, pn_next),
+                mode="area"
+            )
+            pn_next = v_patch_nums[si + 1]
+            h_BChw = F.interpolate(
+                h_BChw,
+                size=(pn_next, pn_next),
+                mode="bicubic"
+            ).view(B, C, -1).transpose(1, 2)
+            next_scales.append(h_BChw)
+        return (
+            torch.cat(next_scales, dim=1) if len(next_scales) else None
+        ) # cat BlCs to BLC, this should be float32
 
     # ===================== get_next_autoregressive_input: only used in VAR inference, for getting next step's input =====================
     def get_next_autoregressive_input(

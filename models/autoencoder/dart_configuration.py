@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from transformers import PretrainedConfig
 
-__all__ = ["DARTAutoEncoderConfig"]
+__all__ = ["DARTAutoEncoderConfig", "DARTAutoEncoderWithDiscConfig"]
 
 class DARTAutoEncoderConfig(PretrainedConfig):
     model_type = "dart_autoencoder"
@@ -19,7 +19,7 @@ class DARTAutoEncoderConfig(PretrainedConfig):
         quant_resi=0.5,
         share_quant_resi=4,
         default_qresi_counts=0,
-        v_patch_nums=(1, 2, 3, 4, 5, 7, 9, 12, 16, 21, 27, 36, 48, 64),
+        v_patch_nums=(1, 2, 3, 4, 5, 6, 8, 10, 13, 16),
         test_mode=False,
         ch_mult=(1, 1, 2, 2, 4),
         levels=[8, 8, 8, 6, 5],
