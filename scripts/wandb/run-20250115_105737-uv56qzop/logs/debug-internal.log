@@ -1,8 +1,0 @@
-{"time":"2025-01-15T10:57:37.298183506-05:00","level":"INFO","msg":"using version","core version":"0.18.7"}
-{"time":"2025-01-15T10:57:37.298245432-05:00","level":"INFO","msg":"created symlink","path":"/fs/scratch/PAS2473/ICML2025/dart/scripts/wandb/run-20250115_105737-uv56qzop/logs/debug-core.log"}
-{"time":"2025-01-15T10:57:37.559560313-05:00","level":"INFO","msg":"created new stream","id":"uv56qzop"}
-{"time":"2025-01-15T10:57:37.559627099-05:00","level":"INFO","msg":"stream: started","id":"uv56qzop"}
-{"time":"2025-01-15T10:57:37.561178404-05:00","level":"INFO","msg":"sender: started","stream_id":"uv56qzop"}
-{"time":"2025-01-15T10:57:37.561219611-05:00","level":"INFO","msg":"handler: started","stream_id":"uv56qzop"}
-{"time":"2025-01-15T10:57:37.561239188-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"uv56qzop"}
-{"time":"2025-01-15T10:57:37.860709519-05:00","level":"INFO","msg":"Starting system monitor"}

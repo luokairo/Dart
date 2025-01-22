@@ -101,7 +101,19 @@ def build_everything(args: arg_util.Args):
 
     print(f'[INIT] DART model = {dart_wo_ddp}\n\n')
     count_p = lambda m: f'{sum(p.numel() for p in m.parameters())/1e6:.2f}'
-    print()
+    print(f'[INIT][#para] ' + ', '.join([f'{k}={count_p(m)}' for k, m in (('VAE', vae_local), ('VAE.enc', vae_local.encoder), ('VAE.dec', vae_local.decoder), ('VAE.quant', vae_local.quantize))]))
+    print(f'[INIT][#para] ' + ', '.join([f'{k}={count_p(m)}' for k, m in (('DART', dart_wo_ddp),)]) + '\n\n')
+
+    # build optimizer
+    names, paras, para_groups = filter_params(dart_wo_ddp, nowd_keys={
+        'cls_token', 'start_token', 'task_token', 'cfg_uncond',
+        'pos_embed', 'pos_1LC', 'pos_start', 'start_pos', 'lvl_embed',
+        'gamma', 'beta',
+        'ada_gss', 'moe_bias',
+        'scale_mul',
+    })
+    
+    
 
     
 

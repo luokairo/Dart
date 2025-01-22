@@ -1,3 +1,0 @@
-  0%|                                                                                                                          | 0/2 [00:00<?, ?it/s][[34m2025-01-15 10:57:38[0m] Begin epoch 0...
-                                                                                                                                                     /fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/quantize/dart_quantize.py:47: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
-  with torch.cuda.amp.autocast(enabled=False):                                                                             | 0/13617 [00:00<?, ?it/s]

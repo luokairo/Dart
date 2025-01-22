@@ -1,8 +1,0 @@
-{"time":"2025-01-21T00:17:12.84348741-05:00","level":"INFO","msg":"using version","core version":"0.18.7"}
-{"time":"2025-01-21T00:17:12.843585534-05:00","level":"INFO","msg":"created symlink","path":"/fs/scratch/PAS2473/ICML2025/dart/scripts/wandb/run-20250121_001712-svu41pbc/logs/debug-core.log"}
-{"time":"2025-01-21T00:17:13.373868548-05:00","level":"INFO","msg":"created new stream","id":"svu41pbc"}
-{"time":"2025-01-21T00:17:13.373935964-05:00","level":"INFO","msg":"stream: started","id":"svu41pbc"}
-{"time":"2025-01-21T00:17:13.375853011-05:00","level":"INFO","msg":"sender: started","stream_id":"svu41pbc"}
-{"time":"2025-01-21T00:17:13.375911511-05:00","level":"INFO","msg":"handler: started","stream_id":"svu41pbc"}
-{"time":"2025-01-21T00:17:13.375937129-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"svu41pbc"}
-{"time":"2025-01-21T00:17:13.571607385-05:00","level":"INFO","msg":"Starting system monitor"}

@@ -1,8 +1,0 @@
-{"time":"2025-01-13T09:36:25.629229361-05:00","level":"INFO","msg":"using version","core version":"0.18.7"}
-{"time":"2025-01-13T09:36:25.629297148-05:00","level":"INFO","msg":"created symlink","path":"/fs/scratch/PAS2473/ICML2025/dart/scripts/wandb/run-20250113_093625-ty5ahmlx/logs/debug-core.log"}
-{"time":"2025-01-13T09:36:25.951891554-05:00","level":"INFO","msg":"created new stream","id":"ty5ahmlx"}
-{"time":"2025-01-13T09:36:25.951969731-05:00","level":"INFO","msg":"stream: started","id":"ty5ahmlx"}
-{"time":"2025-01-13T09:36:25.953040765-05:00","level":"INFO","msg":"handler: started","stream_id":"ty5ahmlx"}
-{"time":"2025-01-13T09:36:25.964066559-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"ty5ahmlx"}
-{"time":"2025-01-13T09:36:25.964147391-05:00","level":"INFO","msg":"sender: started","stream_id":"ty5ahmlx"}
-{"time":"2025-01-13T09:36:26.15302554-05:00","level":"INFO","msg":"Starting system monitor"}
