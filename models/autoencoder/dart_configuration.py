@@ -19,7 +19,7 @@ class DARTAutoEncoderConfig(PretrainedConfig):
         quant_resi=0.5,
         share_quant_resi=4,
         default_qresi_counts=0,
-        v_patch_nums=(1, 2, 3, 4, 5, 6, 8, 10, 13, 16),
+        v_patch_nums=(1, 2, 3, 4, 6, 9, 13, 18, 24, 32),
         test_mode=False,
         ch_mult=(1, 1, 2, 2, 4),
         levels=[8, 8, 8, 6, 5],
@@ -28,6 +28,10 @@ class DARTAutoEncoderConfig(PretrainedConfig):
         disable_quant_resi: bool = False,
         freeze_codebook_for_hybrid: bool = True,
         double_decoder=False,
+        text_model_path = "/fs/scratch/PAS2473/ICML2025/hart/hart/Qwen2-VL-1.5B-Instruct",
+        context_token=300,
+        context_dim=1536,
+        
         **kwargs,
     ):
         super().__init__()
@@ -51,6 +55,9 @@ class DARTAutoEncoderConfig(PretrainedConfig):
         self.disable_quant_resi = disable_quant_resi
         self.freeze_codebook_for_hybrid = freeze_codebook_for_hybrid
         self.double_decoder = double_decoder
+        self.text_model_path = text_model_path
+        self.context_dim = context_dim
+        self.context_token = context_token
 
 
 class DARTAutoEncoderWithDiscConfig(DARTAutoEncoderConfig):

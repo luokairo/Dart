@@ -104,19 +104,12 @@ class DartHybridQuantizer(VARQuantizer):
 
             # optionally decode the continuous latent or hybird latent
             p = random.random()
-            h_BChw = f_rest.clone()
-            f_hat_continuous = f_hat + h_BChw
-            if p <= skip_continuous_prob:
-                # skip the final stage with 33% probability
-                f_hat = f_hat_continuous
+            if p >= skip_continuous_prob:
+                # skip the final stage with 50% probability
+                h_BChw = f_rest.clone()
+                f_hat = f_hat + h_BChw
                 f_rest -= h_BChw
-            elif p <= 2 * skip_continuous_prob:
-                # using hybird latent with 33% probability
-                f_hat = 0.5 * f_hat + 0.5 * f_hat_continuous
-                f_rest = f_no_grad - f_hat
 
-            mean_vq_loss *= 1.0 / SN
-            f_hat = (f_hat.data - f_no_grad).add_(f_BChw)
 
         margin = 1
         if ret_usages:

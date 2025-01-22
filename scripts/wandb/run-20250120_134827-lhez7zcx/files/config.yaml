@@ -1,0 +1,130 @@
+_wandb:
+    value:
+        cli_version: 0.18.7
+        m: []
+        python_version: 3.10.16
+        t:
+            "1":
+                - 1
+                - 11
+                - 41
+                - 49
+                - 55
+                - 63
+                - 71
+                - 105
+            "2":
+                - 1
+                - 11
+                - 41
+                - 49
+                - 55
+                - 63
+                - 71
+                - 105
+            "3":
+                - 16
+                - 23
+                - 55
+                - 61
+            "4": 3.10.16
+            "5": 0.18.7
+            "6": 4.42.2
+            "8":
+                - 5
+            "12": 0.18.7
+            "13": linux-x86_64
+beta1:
+    value: 0.9
+beta2:
+    value: 0.95
+caption_path:
+    value: /fs/scratch/PAS2473/ICML2025/dataset/openimage/label/merged_open_images_captions.jsonl
+ckpt_every:
+    value: 1000
+cloud_save_path:
+    value: /fs/scratch/PAS2473/ICML2025/logs/vqgan/256
+codebook_weight:
+    value: 1
+compile:
+    value: false
+data_path:
+    value: /fs/scratch/PAS2473/ICML2025/dataset/openimage
+dataset:
+    value: openimage
+disc_loss:
+    value: hinge
+disc_start:
+    value: 2000
+disc_type:
+    value: patchgan
+disc_weight:
+    value: 0.5
+dist_backend:
+    value: nccl
+dist_url:
+    value: env://
+distributed:
+    value: true
+ema:
+    value: false
+enhanced_decoder:
+    value: false
+epochs:
+    value: 4
+finetune:
+    value: false
+finetune_decoder:
+    value: true
+gen_loss:
+    value: hinge
+global_batch_size:
+    value: 180
+global_seed:
+    value: 42
+gpu:
+    value: 0
+image_size:
+    value: 256
+kmeans:
+    value: true
+last_patch_num:
+    value: 16
+log_every:
+    value: 100
+lr:
+    value: 0.0001
+max_grad_norm:
+    value: 1
+max_token_length:
+    value: 300
+mixed_precision:
+    value: none
+no_local_save:
+    value: false
+num_workers:
+    value: 10
+perceptual_weight:
+    value: 1
+rank:
+    value: 0
+reconstruction_loss:
+    value: l2
+reconstruction_weight:
+    value: 1
+results_dir:
+    value: /fs/scratch/PAS2473/ICML2025/result/vqvae/256
+text_model_path:
+    value: /fs/scratch/PAS2473/ICML2025/hart/hart/Qwen2-VL-1.5B-Instruct
+use_llm_system_prompt:
+    value: true
+vae_ckpt:
+    value: null
+vae_path:
+    value: /fs/scratch/PAS2473/ICML2025/hart/hart/hart-0.7b-1024px/tokenizer
+vq_model:
+    value: DART_tokenizer
+world_size:
+    value: 4
+z_channels:
+    value: 32

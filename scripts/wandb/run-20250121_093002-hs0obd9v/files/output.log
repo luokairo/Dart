@@ -1,0 +1,78 @@
+  0%|                                                                                                                                           | 0/1 [00:00<?, ?it/s][[34m2025-01-21 09:30:04[0m] Begin epoch 0...
+                                                                                                                                                                      We detected that you are passing `past_key_values` as a tuple and this is deprecated and will be removed in v4.43. Please use an appropriate `Cache` class (https://huggingface.co/docs/transformers/v4.41.3/en/internal/generation_utils#transformers.Cache)
+/fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/quantize/dart_quantize.py:47: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):
+  0%|▏                                                                                                                           | 31/15763 [01:06<9:25:22,  2.16s/it]
+  0%|                                                                                                                                           | 0/1 [01:06<?, ?it/s]
+Traceback (most recent call last):
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 547, in <module>
+    main(args)
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 345, in main
+    random_features = inception_model(random_samples)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 166, in forward
+    x, aux = self._forward(x)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 131, in _forward
+    x = self.Mixed_6d(x)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 285, in forward
+    outputs = self._forward(x)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 279, in _forward
+    branch_pool = self.branch_pool(branch_pool)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 406, in forward
+    x = self.bn(x)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/batchnorm.py", line 193, in forward
+    return F.batch_norm(
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/functional.py", line 2812, in batch_norm
+    return torch.batch_norm(
+KeyboardInterrupt
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 547, in <module>
+[rank0]:     main(args)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 345, in main
+[rank0]:     random_features = inception_model(random_samples)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 166, in forward
+[rank0]:     x, aux = self._forward(x)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 131, in _forward
+[rank0]:     x = self.Mixed_6d(x)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 285, in forward
+[rank0]:     outputs = self._forward(x)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 279, in _forward
+[rank0]:     branch_pool = self.branch_pool(branch_pool)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torchvision/models/inception.py", line 406, in forward
+[rank0]:     x = self.bn(x)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/batchnorm.py", line 193, in forward
+[rank0]:     return F.batch_norm(
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/functional.py", line 2812, in batch_norm
+[rank0]:     return torch.batch_norm(
+[rank0]: KeyboardInterrupt

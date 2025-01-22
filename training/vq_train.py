@@ -12,7 +12,7 @@ import torch
 import torch.amp
 from zmq import device
 
-from dart.utils import data
+from dart.utils import data, encode_prompts, llm_system_prompt
 
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -21,6 +21,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torchvision import transforms
+from torch.optim.lr_scheduler import CosineAnnealingLR, CosineAnnealingWarmRestarts
 
 import os
 import time
@@ -35,6 +36,7 @@ from dart.models.autoencoder import (
     DARTAutoEncoder,
     DARTAutoEncoderWithDisc
 )
+
 from dart.training.vq_loss import VQLoss, torch_cov, calculate_fid
 from dart.utils.distributed import init_distributed_mode
 from dart.utils.ema import update_ema, requires_grad
@@ -44,6 +46,10 @@ from dart.dataset.build import build_dataset
 from tqdm import tqdm
 from torchvision.models import inception_v3
 import torch.distributed as dist
+from transformers import (
+    AutoModel,
+    AutoTokenizer
+)
 
 if dist.is_initialized():
     dist.destroy_process_group()
@@ -152,8 +158,13 @@ def main(args):
             optimizer_disc = torch.optim.Adam(vq_loss.discriminator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
     else:
         logger.info("Optimizing only decoder parameters.")
-        optimizer = torch.optim.Adam(vae_model.decoder.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
+        optimizer = torch.optim.Adam([
+            {'params': vae_model.decoder.parameters(), 'lr': args.lr},  # decoder with normal lr
+            {'params': vae_model.router.parameters(), 'lr': args.lr * 10},  # router with 10x lr
+        ], betas=(args.beta1, args.beta2))
         optimizer_disc = torch.optim.Adam(vq_loss.discriminator.parameters(), lr=args.lr, betas=(args.beta1, args.beta2))
+        scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=0.00001)
+        scheduler_disc = CosineAnnealingWarmRestarts(optimizer_disc, T_0=10, T_mult=2, eta_min=0.00001)
 
     
     # Setup data:
@@ -182,6 +193,13 @@ def main(args):
         drop_last=True,
     )
     logger.info(f"Dataset contains {len(dataset):,} images ({args.data_path})")
+    # Setup text_model
+    text_tokenizer = AutoTokenizer.from_pretrained(args.text_model_path)
+    text_model = AutoModel.from_pretrained(args.text_model_path).to(device)
+        # not finetune text_model    
+    for param in text_model.parameters():
+        param.requires_grad = False    
+    text_tokenizer_max_length = args.max_token_length
 
     # Prepare model for training:
     if args.vae_ckpt:
@@ -244,6 +262,8 @@ def main(args):
                 param.requires_grad_(True)
             else:
                 param.requires_grad_(False)
+        for name, param in vae_model.router.named_parameters():
+            param.requires_grad_(True)
 
     if args.compile:
         logger.info("compiling the model... (may take several minutes)")
@@ -267,7 +287,7 @@ def main(args):
     # Initialize wandb
     if rank == 0:
         import wandb
-        wandb.init(project="cloud-VQ-256", config=args)
+        wandb.init(project="cloud-Dart-VQ-512", config=args)
 
     # Begin to trainging
     for epoch in tqdm(range(start_epoch, args.epochs)):
@@ -277,14 +297,33 @@ def main(args):
         running_rfid = 0
         running_gfid = 0
 
-        for x, _ in tqdm(loader):
+        for x, label_B in tqdm(loader):
             imgs = x.to(device, non_blocking=True)
+            # Get context_tensor
+            (
+                context_tokens,
+                context_mask,
+                context_position_ids,
+                context_tenser
+            ) = encode_prompts(
+                label_B,
+                text_model,
+                text_tokenizer,
+                args.max_token_length,
+                llm_system_prompt,
+                args.use_llm_system_prompt,
+            )
 
             # generator training
             optimizer.zero_grad()
             with torch.amp.autocast('cuda', dtype=ptdtype):
-                out = vae_model(imgs)
+                out = vae_model(imgs, context_tenser)
                 recons_imgs, usages, codebook_loss = out["out"], out["usages"], out["vq_loss"]
+                routing_outcome = out["routing_outcome"]
+                # Jingyi:
+                # 提取 continuous 和 discrete 的值，计算它们的 batch 平均值
+                continuous_mean = routing_outcome["continuous"].mean()  # 计算 continuous 的均值
+                discrete_mean = routing_outcome["discrete"].mean()  # 计算 discrete 的均值
 
                 # Jingyi: calculate FID for every batch
                 with torch.no_grad():
@@ -332,6 +371,7 @@ def main(args):
 
             scaler.step(optimizer)
             scaler.update()
+            scheduler.step()
             if args.ema:
                 update_ema(ema, vae_model.module._orig_mod if args.compile else vae_model)
 
@@ -354,6 +394,7 @@ def main(args):
                 torch.nn.utils.clip_grad_norm_(vae_model.parameters(), args.max_grad_norm)
             scaler_disc.step(optimizer_disc)
             scaler_disc.update()
+            scheduler_disc.step()
 
             # Log loss values:
             running_loss += loss_gen.item() + loss_disc.item()
@@ -384,11 +425,17 @@ def main(args):
                     'metrics/avg_rFID': avg_rfid,
                     'metrics/avg_gFID': avg_gfid
                 })
+                # 将计算得到的平均值添加到日志字典中
+                loss_dict_gen.update({
+                    'metrics/batch_continuous_mean': continuous_mean.item(),
+                    'metrics/batch_discrete_mean': discrete_mean.item()
+                })
                 
                 logger.info(
                     f"(step={train_steps:07d}) Train Loss: {avg_loss:.4f}, "
                     f"Batch rFID: {rfid.item():.4f}, Batch gFID: {gfid.item():.4f}, "
                     f"Avg rFID: {avg_rfid:.4f}, Avg gFID: {avg_gfid:.4f}, "
+                    f"continuous: {continuous_mean:.4f}, discrete: {discrete_mean:.4f}"
                     f"Train Steps/Sec: {steps_per_sec:.2f}")
                 
                 if rank == 0:
@@ -439,6 +486,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Required data paths
     parser.add_argument("--data-path", type=str, required=True, default="", help="Path to training dataset") # should fill
+    parser.add_argument("--caption_path", type=str, default="/fs/scratch/PAS2473/ICML2025/dataset/openimage/label/merged_open_images_captions.jsonl")
     parser.add_argument("--cloud-save-path", type=str, default='', 
                       help='Cloud disk path for saving checkpoints') # should fill
     parser.add_argument("--results-dir", type=str, default="",
@@ -447,6 +495,7 @@ if __name__ == "__main__":
     # Model configuration
     parser.add_argument("--vq-model", type=str, default="DART_tokenizer")
     parser.add_argument("--vae-path", type=str, required=True, help="Path to pretrained VAE model") # should fill
+    parser.add_argument("--text-model-path", type=str, default="/fs/scratch/PAS2473/ICML2025/hart/hart/Qwen2-VL-1.5B-Instruct", help="Path of text model")
     parser.add_argument("--vae-ckpt", type=str, default=None, help="Checkpoint path for resuming training")
     parser.add_argument("--ema", action='store_true', help="Whether to use EMA during training")
     parser.add_argument("--finetune", action='store_true', help="Whether to finetune a pre-trained model")
@@ -455,6 +504,8 @@ if __name__ == "__main__":
     parser.add_argument("--kmeans", default=True, help="Whether to use kmeans for codebook initialization")
     parser.add_argument("--last_patch_num", default=16, help="v_patch_nums[-1]")
     parser.add_argument("--z_channels", default=32)
+    parser.add_argument("--max_token_length", type=int, default=300)
+    parser.add_argument("--use_llm_system_prompt", type=bool, default=True)
 
     # Training parameters
     parser.add_argument("--dataset", type=str, default="openimage", help="Name of training dataset")
@@ -471,7 +522,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-workers", type=int, default=64, help="Number of data loading workers")
 
     # Loss weights and configurations
-    parser.add_argument("--disc-start", type=int, default=20000, help="Steps before starting discriminator training")
+    parser.add_argument("--disc-start", type=int, default=1800, help="Steps before starting discriminator training")
     parser.add_argument("--disc-weight", type=float, default=0.5, help="Weight for discriminator loss")
     parser.add_argument("--disc-type", type=str, default='patchgan', choices=['patchgan', 'stylegan'])
     parser.add_argument("--disc-loss", type=str, default='hinge', 
@@ -487,8 +538,8 @@ if __name__ == "__main__":
                       help="Input image size")
 
     # Logging and checkpointing
-    parser.add_argument("--log-every", type=int, default=100, help="Log frequency in steps")
-    parser.add_argument("--ckpt-every", type=int, default=1000, help="Checkpoint saving frequency in steps")
+    parser.add_argument("--log-every", type=int, default=50, help="Log frequency in steps")
+    parser.add_argument("--ckpt-every", type=int, default=1800, help="Checkpoint saving frequency in steps")
     parser.add_argument("--no-local-save", action='store_true', 
                       help="Don't save checkpoints locally (for limited disk space)")
     parser.add_argument('--finetune_decoder', action='store_true', help='finetune decoder')

@@ -1,0 +1,16 @@
+{"time":"2025-01-19T10:40:49.866111872-05:00","level":"INFO","msg":"using version","core version":"0.18.7"}
+{"time":"2025-01-19T10:40:49.866242978-05:00","level":"INFO","msg":"created symlink","path":"/fs/scratch/PAS2473/ICML2025/dart/scripts/wandb/run-20250119_104049-tnhpadsd/logs/debug-core.log"}
+{"time":"2025-01-19T10:40:50.178429037-05:00","level":"INFO","msg":"created new stream","id":"tnhpadsd"}
+{"time":"2025-01-19T10:40:50.178467168-05:00","level":"INFO","msg":"stream: started","id":"tnhpadsd"}
+{"time":"2025-01-19T10:40:50.1785159-05:00","level":"INFO","msg":"handler: started","stream_id":"tnhpadsd"}
+{"time":"2025-01-19T10:40:50.17877742-05:00","level":"INFO","msg":"sender: started","stream_id":"tnhpadsd"}
+{"time":"2025-01-19T10:40:50.178770287-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"tnhpadsd"}
+{"time":"2025-01-19T10:40:50.42414236-05:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-01-20T01:18:21.313201684-05:00","level":"INFO","msg":"stream: closing","id":"tnhpadsd"}
+{"time":"2025-01-20T01:18:21.313262328-05:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-01-20T01:18:21.3139081-05:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-01-20T01:18:22.512032635-05:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-01-20T01:18:22.631087237-05:00","level":"INFO","msg":"handler: closed","stream_id":"tnhpadsd"}
+{"time":"2025-01-20T01:18:22.631117574-05:00","level":"INFO","msg":"writer: Close: closed","stream_id":"tnhpadsd"}
+{"time":"2025-01-20T01:18:22.631127162-05:00","level":"INFO","msg":"sender: closed","stream_id":"tnhpadsd"}
+{"time":"2025-01-20T01:18:22.631331816-05:00","level":"INFO","msg":"stream: closed","id":"tnhpadsd"}

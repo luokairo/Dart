@@ -1,0 +1,22 @@
+  0%|                                                                                                         | 0/4 [00:00<?, ?it/s][[34m2025-01-20 23:36:35[0m] Begin epoch 0...
+                                                                                                                                    We detected that you are passing `past_key_values` as a tuple and this is deprecated and will be removed in v4.43. Please use an appropriate `Cache` class (https://huggingface.co/docs/transformers/v4.41.3/en/internal/generation_utils#transformers.Cache)
+/fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/quantize/dart_quantize.py:47: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):
+  1%|▌                                                                                          | 17/2802 [01:04<2:55:43,  3.79s/it]
+  0%|                                                                                                         | 0/4 [01:04<?, ?it/s]
+Traceback (most recent call last):
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 548, in <module>
+    main(args)
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 340, in main
+    rfid = calculate_fid(real_mu, real_sigma, gen_mu, gen_sigma)
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_loss.py", line 59, in calculate_fid
+    u, s, v = torch.svd(torch.matmul(sigma1, sigma2))
+KeyboardInterrupt
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 548, in <module>
+[rank0]:     main(args)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 340, in main
+[rank0]:     rfid = calculate_fid(real_mu, real_sigma, gen_mu, gen_sigma)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_loss.py", line 59, in calculate_fid
+[rank0]:     u, s, v = torch.svd(torch.matmul(sigma1, sigma2))
+[rank0]: KeyboardInterrupt

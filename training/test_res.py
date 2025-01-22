@@ -11,19 +11,12 @@ from skimage.metrics import structural_similarity as ssim
 import numpy as np
 
 # 加载自编码器模型
-vae_path = "/Users/kairoliu/Documents/Dart/hart/tokenizer"
+vae_path = "/fs/scratch/PAS2473/ICML2025/hart/hart/hart-0.7b-1024px/tokenizer"
 vae = DARTAutoEncoderWithDisc.from_pretrained(vae_path, ignore_mismatched_sizes=True).vae
-# 加载权重并处理可能的键值不匹配
-state_dict = torch.load('/Users/kairoliu/Documents/Dart/hart/0009000.pt',
-                       map_location='cpu',
-                       weights_only=False)
 
-# 移除可能的'module.'前缀（如果模型之前使用了DataParallel）
-state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-vae.load_state_dict(state_dict, strict=False)  # strict=False允许部分权重不匹配
 print(vae.config)
 # 加载图像并进行预处理
-image_path = "/Users/kairoliu/Downloads/2164.jpg"  # 修改为你的图像路径
+image_path = "/fs/scratch/PAS2473/ICML2025/hart/hart/picture/000002.png"  # 修改为你的图像路径
 image = Image.open(image_path)
 
 # 保存原始图像的尺寸

@@ -1,0 +1,66 @@
+  0%|                                                                                                               | 0/1 [00:00<?, ?it/s][[34m2025-01-21 09:31:53[0m] Begin epoch 0...
+                                                                                                                                          We detected that you are passing `past_key_values` as a tuple and this is deprecated and will be removed in v4.43. Please use an appropriate `Cache` class (https://huggingface.co/docs/transformers/v4.41.3/en/internal/generation_utils#transformers.Cache)
+/fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/quantize/dart_quantize.py:47: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):
+  0%|                                                                                                           | 0/10508 [00:07<?, ?it/s]
+  0%|                                                                                                               | 0/1 [00:07<?, ?it/s]
+Traceback (most recent call last):
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 547, in <module>
+    main(args)
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 354, in main
+    loss_gen, loss_dict_gen = vq_loss(
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/parallel/distributed.py", line 1643, in forward
+    else self._run_ddp_forward(*inputs, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/parallel/distributed.py", line 1459, in _run_ddp_forward
+    return self.module(*inputs, **kwargs)  # type: ignore[index]
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_loss.py", line 150, in forward
+    p_loss = self.perceptual_loss(inputs.contiguous(), reconstructions.contiguous())
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/lpips.py", line 89, in forward
+    feats0[kk], feats1[kk] = normalize_tensor(outs0[kk]), normalize_tensor(outs1[kk])
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/lpips.py", line 159, in normalize_tensor
+    norm_factor = torch.sqrt(torch.sum(x**2,dim=1,keepdim=True))
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/_tensor.py", line 39, in wrapped
+    return f(*args, **kwargs)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 384.00 MiB. GPU 0 has a total capacity of 79.14 GiB of which 321.50 MiB is free. Including non-PyTorch memory, this process has 78.81 GiB memory in use. Of the allocated memory 76.57 GiB is allocated by PyTorch, and 318.50 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 547, in <module>
+[rank0]:     main(args)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 354, in main
+[rank0]:     loss_gen, loss_dict_gen = vq_loss(
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/parallel/distributed.py", line 1643, in forward
+[rank0]:     else self._run_ddp_forward(*inputs, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/parallel/distributed.py", line 1459, in _run_ddp_forward
+[rank0]:     return self.module(*inputs, **kwargs)  # type: ignore[index]
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_loss.py", line 150, in forward
+[rank0]:     p_loss = self.perceptual_loss(inputs.contiguous(), reconstructions.contiguous())
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+[rank0]:     return self._call_impl(*args, **kwargs)
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+[rank0]:     return forward_call(*args, **kwargs)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/lpips.py", line 89, in forward
+[rank0]:     feats0[kk], feats1[kk] = normalize_tensor(outs0[kk]), normalize_tensor(outs1[kk])
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/lpips.py", line 159, in normalize_tensor
+[rank0]:     norm_factor = torch.sqrt(torch.sum(x**2,dim=1,keepdim=True))
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/_tensor.py", line 39, in wrapped
+[rank0]:     return f(*args, **kwargs)
+[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 384.00 MiB. GPU 0 has a total capacity of 79.14 GiB of which 321.50 MiB is free. Including non-PyTorch memory, this process has 78.81 GiB memory in use. Of the allocated memory 76.57 GiB is allocated by PyTorch, and 318.50 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

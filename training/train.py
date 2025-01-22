@@ -41,6 +41,7 @@ def build_everything(args: arg_util.Args):
         num_classes, dataset_train, dataset_val = build_dataset(
             args.data_path, args.data_load_reso, hflip=args.hflip, mid_reso=args.mid_reso,
         )
+        types = str((type(dataset_train).__name__, type(dataset_val).__name__))
 
         ld_val = DataLoader(
             dataset_val, num_workers=0, pin_memory=True,
@@ -75,6 +76,43 @@ def build_everything(args: arg_util.Args):
 
     # build models
     from torch.nn.parallel import DistributedDataParallel as DDP
+    from dart.models import DARTForT2I, DARTAutoEncoderWithDisc, DARTAutoEncoder, build_vae_dart
+    from dart.training.trainer import DARTTrainer
+    from dart.utils.amp_sc import AmpOptimizer
+    from dart.utils.lr_control import filter_params
+    from dart.models.transformer.configuration import DARTForT2IConfig
+    from dart.models.autoencoder.dart_configuration import DARTAutoEncoderWithDiscConfig
 
+    vae_local, dart_wo_ddp = build_vae_dart(
+        device=dist.get_device(), dart_autoencoder_config=DARTAutoEncoderWithDiscConfig,
+        dart_config=DARTForT2IConfig
+    )
+
+    vae_ckpt = "/fs/scratch/PAS2473/ICML2025/result/vqvae/512/008-DART_tokenizer/checkpoints/0003600.pt"
+    if dist.is_local_master():
+        if not os.path.exists(vae_ckpt):
+            os.system(f'wget https://huggingface.co/FoundationVision/var/resolve/main/{vae_ckpt}')
+    dist.barrier()
+    vae_local.load_state_dict(torch.load(vae_ckpt, map_location='cpu'), strict=True)
+
+    vae_local: DARTAutoEncoder = args.compile_model(vae_local, args.vfast)
+    dart_wo_ddp: DARTForT2I = args.compile_model(dart_wo_ddp, args.tfast)
+    dart: DDP = (DDP if dist.initialized() else NullDDP)(dart_wo_ddp, device_ids=[dist.get_local_rank()], find_unused_parameters=False, broadcast_buffers=False)
+
+    print(f'[INIT] DART model = {dart_wo_ddp}\n\n')
+    count_p = lambda m: f'{sum(p.numel() for p in m.parameters())/1e6:.2f}'
+    print()
+
+    
+
+
+class NullDDP(torch.nn.Module):
+    def __init__(self, module, *args, **kwargs):
+        super(NullDDP, self).__init__()
+        self.module = module
+        self.require_backward_grad_sync = False
+    
+    def forward(self, *args, **kwargs):
+        return self.module(*args, **kwargs)
     
 

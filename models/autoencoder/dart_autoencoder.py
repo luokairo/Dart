@@ -30,6 +30,11 @@ from dart.models.autoencoder.quantize.var_quantize_multiple_res import (
     VectorQuantizer2 as VARQuantizer,
 )
 from dart.models.networks.basic_vae import Decoder, Encoder
+from dart.models.router.mlp_router import DARTRouterMlp
+from transformers import (
+    AutoModel,
+    AutoTokenizer
+)
 
 
 
@@ -55,6 +60,10 @@ class DARTAutoEncoder(PreTrainedModel):
         v_patch_nums = config.v_patch_nums
         test_mode = config.test_mode
         freeze_codebook_for_hybrid = config.freeze_codebook_for_hybrid
+
+        text_model_path = config.text_model_path
+        context_token = config.context_token
+        context_dim = config.context_dim
 
         self.test_mode = test_mode
         self.V, self.Cvae = vocab_size, z_channels
@@ -132,23 +141,49 @@ class DARTAutoEncoder(PreTrainedModel):
         if test_mode:
             self.eval()
             [p.requires_grad_(False) for p in self.parameters()]
+        # router (Jingyi):
+        self.router = DARTRouterMlp()
         
     
     # ===================== `forward` is only used in VAE training =====================
     def forward(
         self,
         input,
+        context_tensor,
         ret_usages=True,
         patch_nums=None,
         skip_continuous_prob=0.33,
+        use_router=True,
     ):
-        h_BChw, usages, vq_loss, _ = self.quantize(
+        con_h_BChw, usages, vq_loss, _ = self.quantize(
             self.quant_conv(self.encoder(input)),
             patch_nums=patch_nums,
             ret_usages=ret_usages,
             return_all_codes=False,
-            skip_continuous_prob=skip_continuous_prob,
+            skip_continuous_prob=0.0,
         )
+
+        dis_h_BChw, usages, vq_loss, _ = self.quantize(
+            self.quant_conv(self.encoder(input)),
+            patch_nums=patch_nums,
+            ret_usages=ret_usages,
+            return_all_codes=False,
+            skip_continuous_prob=1.0,
+        )
+        if use_router:
+            h_BChw, routing_outcome = self.router(
+                con_h_BChw,
+                dis_h_BChw,
+                context_tensor
+            )
+        else:
+            p = random.random()
+            if p < skip_continuous_prob:
+                h_BChw = dis_h_BChw
+            elif p < 2 * skip_continuous_prob:
+                h_BChw = 0.5 * dis_h_BChw + 0.5 * con_h_BChw
+            else:
+                h_BChw = con_h_BChw
 
         out = self.decoder(self.post_quant_conv(h_BChw))
 
@@ -156,6 +191,7 @@ class DARTAutoEncoder(PreTrainedModel):
             "out": out,
             "usages": usages,
             "vq_loss": vq_loss,
+            "routing_outcome": routing_outcome if routing_outcome is not None else None,
         }
     
     def forward_with_double_decoder(

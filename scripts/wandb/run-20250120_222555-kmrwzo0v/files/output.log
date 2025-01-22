@@ -1,0 +1,44 @@
+  0%|                                                                                                         | 0/4 [00:00<?, ?it/s][[34m2025-01-20 22:25:57[0m] Begin epoch 0...
+                                                                                                                                    We detected that you are passing `past_key_values` as a tuple and this is deprecated and will be removed in v4.43. Please use an appropriate `Cache` class (https://huggingface.co/docs/transformers/v4.41.3/en/internal/generation_utils#transformers.Cache)
+/fs/scratch/PAS2473/ICML2025/dart/models/autoencoder/quantize/dart_quantize.py:47: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=False):
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+  0%|▏                                                                                           | 6/2802 [00:31<4:01:13,  5.18s/it]
+  0%|                                                                                                         | 0/4 [00:31<?, ?it/s]
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+tensor(0.5000, device='cuda:0')
+Traceback (most recent call last):
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 548, in <module>
+    main(args)
+  File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 366, in main
+    scaler.scale(loss_gen).backward()
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/_tensor.py", line 581, in backward
+    torch.autograd.backward(
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/autograd/graph.py", line 825, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+KeyboardInterrupt
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 548, in <module>
+[rank0]:     main(args)
+[rank0]:   File "/fs/scratch/PAS2473/ICML2025/dart/training/vq_train.py", line 366, in main
+[rank0]:     scaler.scale(loss_gen).backward()
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/_tensor.py", line 581, in backward
+[rank0]:     torch.autograd.backward(
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/autograd/__init__.py", line 347, in backward
+[rank0]:     _engine_run_backward(
+[rank0]:   File "/users/PAS2473/brucewan666/anaconda3/envs/dart/lib/python3.10/site-packages/torch/autograd/graph.py", line 825, in _engine_run_backward
+[rank0]:     return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+[rank0]: KeyboardInterrupt
