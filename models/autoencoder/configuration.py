@@ -55,7 +55,7 @@ class HARTAutoEncoderConfig(PretrainedConfig):
 
 
 class HARTAutoEncoderWithDiscConfig(HARTAutoEncoderConfig):
-    model_type = "hart_autoencoder_with_disc"
+    model_type = "art_autoencoder_with_disc"
 
     def __init__(
         self,

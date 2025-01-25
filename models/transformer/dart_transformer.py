@@ -69,8 +69,8 @@ class SharedAdaLin(nn.Linear):
 class DARTForT2I(PreTrainedModel):
     config_class = DARTForT2IConfig
 
-    def __init__(self, config: DARTForT2IConfig):
-        super().__init__()
+    def __init__(self, vae: DARTAutoEncoder, config: DARTForT2IConfig):
+        super().__init__(config)
         self.supports_gradient_checkpointing = True
     
 
@@ -119,7 +119,7 @@ class DARTForT2I(PreTrainedModel):
         )
         # for mask
 
-        vae_local = DARTAutoEncoderWithDisc.from_pretrained(vae_path).vae
+        vae_local = vae
         vae_local = vae_local.cuda()
         vae_local.requires_grad_(False)
 
@@ -930,7 +930,7 @@ class DARTForT2I(PreTrainedModel):
     def extra_repr(self):
         return f"drop_path_rate={self.drop_path_rate:g}"
 
-AutoConfig.register("Dart_transformer_t2i", DARTForT2IConfig)
+AutoConfig.register("dart_transformer_t2i", DARTForT2IConfig)
 AutoModel.register(DARTForT2IConfig, DARTForT2I)     
 
             

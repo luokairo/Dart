@@ -54,7 +54,9 @@ class DARTTrainer(object):
         # text embedding (Jingyi):
         self.text_tokenizer = AutoTokenizer.from_pretrained(text_model_path)
         self.text_model = AutoModel(text_model_path).to(device)
-        self.text_model.eval()
+        # not finetune text_model
+        for param in self.text_model.parameters():
+            param.requires_grad = False
         self.max_token_length = max_token_length
         self.use_llm_system_prompt = use_llm_system_prompt
         
@@ -160,7 +162,7 @@ class DARTTrainer(object):
         if prog_si == len(self.patch_nums) - 1: prog_si = -1    # max prog, as if no prog
         
         # forward
-        B, V = label_B.shape[0], self.vae_local.vocab_size
+        B, V = inp_B3HW.shape[0], self.vae_local.vocab_size
         self.dart.require_backward_grad_sync = stepping
 
         f_BChw = self.vae_local.quant_conv(self.vae_local.encoder(inp_B3HW)) # (B, Cvae, ph, pw)

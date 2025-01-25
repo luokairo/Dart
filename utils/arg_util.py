@@ -24,6 +24,7 @@ import dist
 
 class Args(Tap):
     data_path: str = '/path/to/imagenet'
+    caption_path: str = ''
     exp_name: str = 'text'
     
     # VAE
@@ -58,6 +59,11 @@ class Args(Tap):
     
     opt: str = 'adamw'      # lion: https://cloud.tencent.com/developer/article/2336657?areaId=106001 lr=5e-5 (0.25x) wd=0.8 (8x); Lion needs a large bs to work
     afuse: bool = True      # fused adamw
+
+    # text model
+    text_model_path: str = None # While be filled
+    max_token_length: int = 300
+    use_llm_system_prompt: bool = True
     
     # other hps
     saln: bool = False      # whether to use shared adaln
@@ -186,8 +192,8 @@ class Args(Tap):
         for k, v in {
             'it': self.cur_it, 'ep': self.cur_ep,
             'lr': self.cur_lr, 'wd': self.cur_wd, 'grad_norm': self.grad_norm,
-            'L_mean': self.L_mean, 'L_tail': self.L_tail, 'acc_mean': self.acc_mean, 'acc_tail': self.acc_tail,
-            'vL_mean': self.vL_mean, 'vL_tail': self.vL_tail, 'vacc_mean': self.vacc_mean, 'vacc_tail': self.vacc_tail,
+            'L_mean': self.L_mean, 'L_tail': self.L_tail,
+            'vL_mean': self.vL_mean, 'vL_tail': self.vL_tail,
             'remain_time': self.remain_time, 'finish_time': self.finish_time,
         }.items():
             if hasattr(v, 'item'): v = v.item()

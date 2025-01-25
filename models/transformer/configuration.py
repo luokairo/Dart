@@ -15,13 +15,13 @@ class VARTransformerConfig(PretrainedConfig):
         self,
         vae_path: Optional[str] = None,
         num_classes=1000,
-        depth=16,
-        embed_dim=1024,
+        depth=24,
+        embed_dim=1536,
         num_heads=16,
         mlp_ratio=4.0,
         drop_rate=0.0,
         attn_drop_rate=0.0,
-        drop_path_rate=0.0,
+        drop_path_rate=0.10000000000000002,
         norm_eps=1e-6,
         shared_aln=False,
         cond_drop_rate=0.1,
@@ -29,9 +29,9 @@ class VARTransformerConfig(PretrainedConfig):
         patch_nums=(1, 2, 3, 4, 5, 6, 8, 10, 13, 16),  # 10 steps by default
         flash_if_available=True,
         fused_if_available=True,
-        mlp_type="gpt2",
-        attn_type="gpt2",
-        disable_aln=False,
+        mlp_type="llama",
+        attn_type="llama",
+        disable_aln=True,
         use_timestep_embed=False,
         sep_aln_pooling_mode="max",
         use_cross_attn=False,
@@ -72,15 +72,15 @@ class VARTransformerT2IConfig(PretrainedConfig):
     def __init__(
         self,
         vae_path: Optional[str] = None,
-        context_token=77,
-        context_dim=768,
-        depth=16,
-        embed_dim=1024,
-        num_heads=16,
+        context_token=300,
+        context_dim=1536,
+        depth=24,
+        embed_dim=1536,
+        num_heads=24,
         mlp_ratio=4.0,
         drop_rate=0.0,
         attn_drop_rate=0.0,
-        drop_path_rate=0.0,
+        drop_path_rate=0.10000000000000002,
         norm_eps=1e-6,
         shared_aln=False,
         cond_drop_rate=0.1,
@@ -88,10 +88,10 @@ class VARTransformerT2IConfig(PretrainedConfig):
         patch_nums=(1, 2, 3, 4, 5, 6, 8, 10, 13, 16),  # 10 steps by default
         flash_if_available=True,
         fused_if_available=True,
-        mlp_type="gpt2",
-        attn_type="gpt2",
-        disable_aln=False,
-        use_timestep_embed=False,
+        mlp_type="llama",
+        attn_type="llama",
+        disable_aln=True,
+        use_timestep_embed=True,
         sep_aln_pooling_mode="max",
         use_cross_attn=False,
         **kwargs,
@@ -169,7 +169,7 @@ class HARTForT2IConfig(VARTransformerT2IConfig):
 
 
 class DARTForT2IConfig(VARTransformerT2IConfig):
-    model_type = "dart_tranformer_t2i"
+    model_type = "dart_transformer_t2i"
 
     def __init__(
         self,
